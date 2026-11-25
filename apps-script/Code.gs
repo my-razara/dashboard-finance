@@ -17,7 +17,7 @@ const SH = { akun: 'Akun', kontak: 'Kontak', jasa: 'Jasa', rek: 'Rekening', dok:
 const F = {
   akun: [['kode', 'Kode'], ['nama', 'Nama Akun'], ['jenis', 'Jenis'], ['normal', 'Saldo Normal (D/K)'], ['grup', 'Kelompok'], ['sys', 'Akun Sistem'], ['aktif', 'Aktif']],
   kontak: [['id', 'ID'], ['tipe', 'Tipe'], ['nama', 'Nama'], ['pic', 'Kontak / Jabatan'], ['wa', 'WhatsApp'], ['email', 'Email'], ['npwp', 'NPWP'], ['alamat', 'Alamat'],
-    ['pt', 'PT'], ['termin', 'Termin (hari)'], ['pajak', 'Status Pajak'], ['ket', 'Catatan'], ['aktif', 'Aktif']],
+    ['pt', 'PT'], ['termin', 'Termin (hari)'], ['pajak', 'Status Pajak'], ['ket', 'Catatan'], ['aktif', 'Aktif'], ['data', 'Rincian (JSON)']],
   jasa: [['id', 'ID'], ['nama', 'Nama Jasa'], ['akun', 'Akun Pendapatan'], ['harga', 'Harga Standar'], ['pt', 'PT'], ['aktif', 'Aktif']],
   rek: [['id', 'ID'], ['nama', 'Nama Rekening'], ['pt', 'PT'], ['bank', 'Bank'], ['norek', 'No Rekening'], ['saldoAwal', 'Saldo Awal'], ['tglAwal', 'Tanggal Saldo Awal'],
     ['alias', 'Nama di Prospek'], ['aktif', 'Aktif'], ['akun', 'Akun COA'], ['tipe', 'Jenis (bank / kas)']],
@@ -33,7 +33,7 @@ const LEGACY = { trx: 1 };
 const KEY = { akun: 'kode' };
 const NUM = { nominal: 1, saldoAwal: 1, harga: 1, total: 1, termin: 1 };
 const TXT = { kode: 1, tgl: 1, jt: 1, tglAwal: 1, masa: 1, tglSetor: 1, tglLapor: 1, norek: 1, ntpn: 1, npwp: 1, wa: 1, no: 1, dibuat: 1, diubah: 1, data: 1 };
-const DOK_JENIS = ['jual', 'terima', 'beli', 'bayar', 'kas', 'pindah', 'jurnal'];
+const DOK_JENIS = ['jual', 'terima', 'beli', 'bayar', 'kas', 'pindah', 'jurnal', 'gaji', 'aset', 'susut'];
 const AKUN_JENIS = ['aset', 'kewajiban', 'ekuitas', 'pendapatan', 'hpp', 'beban', 'lain_p', 'lain_b', 'pajak'];
 
 // Daftar akun standar perusahaan jasa (bisa diubah tim finance). sys = dipakai jurnal otomatis, tidak bisa dihapus.
@@ -85,6 +85,8 @@ const DEF_SET = {
   ],
   kebijakan: { pendapatan: 'invoice', asetMin: 2500000, susut: 'garis lurus', ppn: 12, dpp: '11/12' },
   aturan: [],   // aturan import rekening koran: [{ kata, akun }]
+  // tarif BPJS (persen) & batas upah; bisa diubah di Data Induk
+  payroll: { kesP: 4, kesK: 1, kesMax: 12000000, jhtP: 3.7, jhtK: 2, jpP: 2, jpK: 1, jpMax: 10547400, jkk: 0.24, jkm: 0.3 },
   kat: [],      // kategori versi lama (hanya untuk pemindahan data)
   mulai: ''     // masa pajak pertama yang dicatat (yyyy-MM)
 };
@@ -430,7 +432,7 @@ function del(token, kind, id) {
     const docs = (kind === 'akun' || kind === 'rek' || kind === 'kontak' || kind === 'jasa') ? read_('dok') : [];
     const usedIn = s => docs.some(d => String(d.data).indexOf('"' + s + '"') >= 0 || d.kontak === s);
     if (kind === 'akun') {
-      if (old.sys) throw new Error('Akun sistem tidak bisa dihapus (dipakai jurnal otomatis). Bisa diganti nama.');
+      if (old.sys || ['6-1001', '6-1002', '2-1402', '2-1403', '6-1501', '1-2901', '3-9001'].indexOf(old.kode) >= 0) throw new Error('Akun ini dipakai jurnal otomatis (gaji / penyusutan / saldo awal), tidak bisa dihapus. Bisa diganti nama.');
       if (usedIn(old.kode) || read_('rek').some(r => r.akun === old.kode)) throw new Error('Akun sudah dipakai transaksi. Nonaktifkan saja.');
     }
     if (kind === 'rek' && usedIn(old.id)) throw new Error('Rekening sudah dipakai transaksi. Nonaktifkan saja.');
@@ -463,6 +465,7 @@ function saveSettings(token, s) {
     kebijakan: s.kebijakan && typeof s.kebijakan === 'object' ? {
       pendapatan: s.kebijakan.pendapatan === 'selesai' ? 'selesai' : 'invoice', asetMin: Math.max(0, Number(s.kebijakan.asetMin) || 0),
       susut: str(s.kebijakan.susut, 40) || 'garis lurus', ppn: Number(s.kebijakan.ppn) || 12, dpp: s.kebijakan.dpp === '1' ? '1' : '11/12' } : cur.kebijakan,
+    payroll: s.payroll && typeof s.payroll === 'object' ? Object.keys(DEF_SET.payroll).reduce((o, k) => { o[k] = Math.max(0, Number(s.payroll[k]) || 0); return o; }, {}) : cur.payroll,
     aturan: Array.isArray(s.aturan) ? s.aturan.filter(a => a && str(a.kata, 60) && a.akun).map(a => ({ kata: str(a.kata, 60), akun: str(a.akun, 20) })).slice(0, 300) : cur.aturan,
     kat: cur.kat,
     mulai: /^\d{4}-\d{2}$/.test(String(s.mulai)) ? s.mulai : cur.mulai

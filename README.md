@@ -3,7 +3,7 @@
 Aplikasi pembukuan (PWA) untuk Vorent, Izinin, dan Echoffice: double-entry, per PT, mulai dari tanggal pendirian.
 Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-prospek), tapi **data keuangan tidak diambil dari Prospek**. Semua diinput oleh tim finance.
 
-## Fitur (tahap Fondasi)
+## Fitur (Fondasi + Tahap 2)
 - **Data Induk**: profil PT & pajak (PKP sejak, jenis pajak, kode invoice), kebijakan akuntansi, Daftar Akun (COA standar perusahaan jasa),
   pelanggan, vendor & agen, karyawan & sales, jasa/paket, rekening bank & kas.
 - **Transaksi dengan jurnal otomatis**: penjualan (invoice, PPN, PPh 23 dipotong klien, DP), terima pembayaran, pembelian/beban (PPN masukan, potong PPh),
@@ -13,7 +13,10 @@ Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-pro
 - **Pajak**: status setor/lapor per masa, angka dari pembukuan, catat pembayaran.
 - **Import data lama**: mutasi rekening koran (CSV/Excel) dengan aturan kata kunci & pencocokan invoice; import pelanggan/vendor dari Excel.
 
-Tahap berikutnya: Payroll & BPJS, Aset Tetap & penyusutan otomatis, Tutup Buku, Arus Kas, Perubahan Ekuitas, CALK, laporan manajemen & tahunan.
+- **Payroll & BPJS** — data karyawan (PTKP, gaji, tunjangan, kepesertaan BPJS), proses gaji per PT per bulan, PPh 21 TER (PP 58/2023) otomatis, jurnal gaji otomatis, rekap tahunan per karyawan. Tarif & batas upah BPJS diatur di Data Induk → Profil PT.
+- **Aset Tetap** — daftar aset, penyusutan garis lurus per bulan, jadwal penyusutan, tombol catat penyusutan (jurnal 6-1501 / 1-2901).
+
+Tahap berikutnya: Tutup Buku, Arus Kas, Perubahan Ekuitas, CALK, laporan manajemen & tahunan.
 
 ## Sheet di spreadsheet Finance
 Akun, Kontak, Jasa, Rekening, Dokumen (semua transaksi, rincian dalam JSON), Pajak, Pengaturan.
