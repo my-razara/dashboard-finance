@@ -994,7 +994,10 @@ setInterval(async()=>{if(!D||!fk||document.hidden||!navigator.onLine||document.q
   if(!fk){lockNow();return}
   load();
 })();
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+// versi baru aplikasi langsung dipakai (muat ulang sekali saat service worker baru aktif)
+if("serviceWorker" in navigator){const had=!!navigator.serviceWorker.controller;let done=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(had&&!done){done=true;location.reload()}});
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").then(r=>r.update()).catch(()=>{}))}
 })();
 </script>
 </body>
