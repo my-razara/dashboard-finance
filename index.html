@@ -72,6 +72,15 @@ a{color:var(--acc-ink)}
 .gate p{color:var(--ink-2);margin:0 0 18px}
 .gate .btn{width:100%;padding:13px}
 
+.pinbox{position:relative;display:block;margin:4px 0 10px;cursor:text}
+.pinv{display:flex;gap:8px}
+.pinv i{flex:1;height:54px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel);display:grid;place-items:center;font-style:normal;font-size:26px;color:var(--ink);min-width:0}
+.pinv i.f{border-color:color-mix(in srgb,var(--fin) 35%,var(--line))}
+.pinv i.cur{border-color:var(--fin);box-shadow:0 0 0 4px color-mix(in srgb,var(--fin) 15%,transparent)}
+.pinbox.err .pinv i{border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+.pinbox input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;font-size:16px;caret-color:transparent;color:transparent;background:none}
+.lkmsg{min-height:20px;font-size:13.5px;color:var(--bad-ink);margin-bottom:10px}
+#lock .btn.primary{background:var(--fin);border-color:var(--fin);box-shadow:none}
 /* ---------- shell ---------- */
 .shell{display:flex;min-height:100vh}
 .side{display:none}
@@ -328,6 +337,18 @@ body.ro .w-only{display:none!important}
   </div>
 </div>
 
+<div id="lock" class="gate" hidden>
+  <form class="card" id="lockFrm" novalidate>
+    <div class="app-logo"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+    <h1>Finance terkunci</h1>
+    <p id="lkText">Masukkan PIN kamu untuk membuka data keuangan.</p>
+    <span class="pinbox" id="lkBox"><span class="pinv" id="lkV" aria-hidden="true"></span><input id="lkPin" type="password" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="6" aria-label="PIN 6 angka"></span>
+    <div class="lkmsg" id="lkErr" role="alert"></div>
+    <button class="btn primary" type="submit" id="lkBtn" disabled>Buka Finance</button>
+    <a class="btn" style="margin-top:8px;border:0;background:none;color:var(--ink-2)" href="#" data-pro-go>← Kembali ke Prospek</a>
+  </form>
+</div>
+
 <div id="app" class="shell" hidden>
   <aside class="side" aria-label="Menu utama">
     <div class="side-brand"><span class="app-logo" aria-hidden="true"><svg viewBox="0 0 64 64" width="32" height="32"><rect x="14" y="34" width="9" height="16" rx="4.5" fill="#fff"/><rect x="27.5" y="25" width="9" height="25" rx="4.5" fill="#fff"/><rect x="41" y="14" width="9" height="36" rx="4.5" fill="#FFC53D"/></svg></span><div><b>Finance</b><small>Keuangan &amp; pajak</small></div></div>
@@ -453,6 +474,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const CFG=window.APP_CONFIG||{};
 const API=CFG.API_URL||"";
 const PRO_URL=CFG.PROSPEK_URL||location.origin+"/dashboard-prospek/";
+const PRO_IN=PRO_URL+"#p"; // langsung ke Prospek tanpa halaman pilih aplikasi
 const ls={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const N=v=>Number(v)||0;
@@ -477,7 +499,11 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");cl
 
 /* ---------- state ---------- */
 let token=ls.get("pm_token",null);
-let D=ls.get("fin_data",null); // {user,settings,trx,rek,pajak,ver}
+let D=null; // {user,settings,trx,rek,pajak,ver} — hanya di memori (tidak disimpan di perangkat)
+ls.del("fin_data");
+const ssg=k=>{try{return sessionStorage.getItem(k)||""}catch(e){return ""}},sss=(k,v)=>{try{v?sessionStorage.setItem(k,v):sessionStorage.removeItem(k)}catch(e){}};
+let fk=ssg("fin_fk");                // kunci PIN Finance (hilang saat aplikasi/tab ditutup)
+const IDLE_MIN=15;let lastAct=Date.now();
 let PT=ls.get("fin_pt","");       // "" = semua
 let PER=ls.get("fin_per",TODAY.slice(0,7)); // yyyy-MM atau yyyy
 let inbox=null;                    // pembayaran Prospek belum dicocokkan
@@ -489,18 +515,43 @@ async function call(action,payload){
   if(!API)throw Object.assign(new Error("NOAPI"),{code:"NOAPI"});
   const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
   let res;
-  try{res=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action,token},payload||{})),redirect:"follow",signal:ctl.signal})}
+  try{res=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action,token,fk},payload||{})),redirect:"follow",signal:ctl.signal})}
   catch(e){throw Object.assign(new Error(navigator.onLine?"Server tidak merespons. Coba lagi.":"Tidak ada internet."),{code:"NET"})}
   finally{clearTimeout(t)}
   const txt=await res.text();let j;
   try{j=JSON.parse(txt)}catch(_){throw Object.assign(new Error("Server Finance belum siap (Code.gs belum ter-deploy?)"),{code:"SCRIPT"})}
-  if(!j.ok){const e=new Error(j.error||"ERR");e.code=j.error||"ERR";if(e.code==="AUTH"||e.code==="NOFIN")gate(e.code);throw e}
+  if(!j.ok){const e=new Error(j.error||"ERR");e.code=j.error||"ERR";if(e.code==="AUTH"||e.code==="NOFIN")gate(e.code);else if(e.code==="FINLOCK"&&action!=="unlock")lockNow();throw e}
   return j.data;
 }
 
+/* ---------- kunci PIN ---------- */
+function lockNow(msg){
+  fk="";sss("fin_fk","");D=null;inbox=null;setDraft=null;
+  $$("dialog[open]").forEach(d=>d.close());
+  $("#app").hidden=true;$("#gate").hidden=true;$("#lock").hidden=false;
+  const n=(ls.get("pm_data",{})||{}).user;$("#lkText").textContent=(n&&n.name?n.name+", m":"M")+"asukkan PIN kamu untuk membuka data keuangan.";
+  $("#lkPin").value="";lkMsg(msg||"");lkPaint();setTimeout(()=>{try{$("#lkPin").focus()}catch(e){}},60);
+}
+function lkMsg(t){$("#lkErr").textContent=t;$("#lkBox").classList.toggle("err",!!t&&!/otomatis/.test(t))}
+function lkPaint(){const v=$("#lkPin").value,f=document.activeElement===$("#lkPin");$("#lkV").innerHTML=Array.from({length:6},(_,i)=>`<i class="${i<v.length?"f":""}${f&&i===Math.min(v.length,5)?" cur":""}">${i<v.length?"•":""}</i>`).join("");$("#lkBtn").disabled=v.length!==6}
+$("#lkPin").addEventListener("input",()=>{$("#lkPin").value=$("#lkPin").value.replace(/\D/g,"").slice(0,6);lkMsg("");lkPaint();if($("#lkPin").value.length===6)$("#lockFrm").requestSubmit()});
+["focus","blur"].forEach(ev=>$("#lkPin").addEventListener(ev,lkPaint));
+let lkBusy=false;
+$("#lockFrm").addEventListener("submit",async e=>{
+  e.preventDefault();const pin=$("#lkPin").value;if(!/^\d{6}$/.test(pin)||lkBusy)return;
+  const b=$("#lkBtn");lkBusy=true;b.disabled=true;b.textContent="Membuka…";
+  try{const r=await call("unlock",{pin});fk=r.fk;sss("fin_fk",fk);lastAct=Date.now();$("#lock").hidden=true;await load()}
+  catch(x){const c=String(x.code||"");$("#lkPin").value="";
+    lkMsg(c.startsWith("BAD:")?`PIN salah. Sisa ${c.split(":")[1]} kali percobaan.`:c.startsWith("LOCK:")?`Terlalu banyak salah. Coba lagi ${c.split(":")[1]} menit lagi.`:x.message)}
+  finally{lkBusy=false;b.textContent="Buka Finance";lkPaint()}
+});
+["pointerdown","keydown","scroll","touchstart"].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
+function idleCheck(){if(D&&Date.now()-lastAct>IDLE_MIN*60000)lockNow("Terkunci otomatis karena tidak dipakai "+IDLE_MIN+" menit.")}
+setInterval(idleCheck,20000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)idleCheck()});
+
 /* ---------- gate ---------- */
 function gate(kind){
-  $("#app").hidden=true;$("#gate").hidden=false;
+  $("#app").hidden=true;$("#lock").hidden=true;$("#gate").hidden=false;
   const b=$("#gBtn");b.href=PRO_URL+"?ke=finance";b.textContent="Masuk lewat Prospek";$("#gHint").textContent="";
   if(kind==="NOAPI"){$("#gTitle").textContent="Finance belum terhubung";$("#gText").textContent="URL server Finance belum diisi di config.js. Ikuti panduan pemasangan (README).";b.href=PRO_URL;b.textContent="Kembali ke Prospek"}
   else if(kind==="NOFIN"){const n=(ls.get("pm_data",{})||{}).user;$("#gTitle").textContent="Belum punya akses Finance";$("#gText").textContent=`Akun ${n&&n.name?n.name+" ":""}belum diberi akses Finance. Minta admin mengaktifkannya di Prospek → Pengguna.`;b.href=PRO_URL;b.textContent="Kembali ke Prospek";ls.del("fin_data");D=null}
@@ -581,7 +632,7 @@ function applyUser(){
   $$("[data-ini]").forEach(e=>e.textContent=ini);$$("[data-uname]").forEach(e=>e.textContent=u.name);
   $$("[data-urole]").forEach(e=>e.textContent=(u.role==="admin"?"Admin":u.role==="atasan"?"Atasan":"PIC")+" · Finance "+(u.fin==="kelola"?"kelola":"lihat")+(u.finPt?" ("+u.finPt+")":""));
   document.body.classList.toggle("ro",!canW());
-  $$("[data-pro-go]").forEach(a=>a.href=PRO_URL);
+  $$("[data-pro-go]").forEach(a=>a.href=PRO_IN);
   const d=new Date(TODAY+"T00:00:00");$("#tDate").textContent=HARI[d.getDay()]+", "+d.getDate()+" "+BLN_L[d.getMonth()]+" "+d.getFullYear();
   themeTxt();
 }
@@ -928,20 +979,19 @@ function themeTxt(){$$("[data-themetxt]").forEach(e=>e.textContent=isDark()?"Mod
 function toggleTheme(){const t=isDark()?"light":"dark";document.documentElement.setAttribute("data-theme",t);ls.set("pm_theme",t);themeTxt()}
 
 /* ---------- load ---------- */
-function saveLocal(){ls.set("fin_data",D)}
+function saveLocal(){}
 async function load(manual){
   syncTxt="memuat…";
   try{const d=await call("getAll");D=d;saveLocal();syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);start();if(manual)toast("Data diperbarui");loadInbox()}
-  catch(e){if(e.code==="AUTH"||e.code==="NOFIN")return;if(e.code==="NOAPI"){gate("NOAPI");return}syncTxt=navigator.onLine?"gagal memuat":"offline";if(D)render();else{gate();$("#gText").textContent="Gagal memuat data: "+e.message;$("#gBtn").textContent="Coba lagi";$("#gBtn").href="#";$("#gBtn").onclick=ev=>{ev.preventDefault();location.reload()}}}
+  catch(e){if(e.code==="AUTH"||e.code==="NOFIN"||e.code==="FINLOCK")return;if(e.code==="NOAPI"){gate("NOAPI");return}syncTxt=navigator.onLine?"gagal memuat":"offline";if(D)render();else{gate();$("#gText").textContent="Gagal memuat data: "+e.message;$("#gBtn").textContent="Coba lagi";$("#gBtn").href="#";$("#gBtn").onclick=ev=>{ev.preventDefault();location.reload()}}}
 }
-function start(){$("#gate").hidden=true;$("#app").hidden=false;applyUser();fillPer();setView(view)}
-setInterval(async()=>{if(!D||document.hidden||!navigator.onLine||document.querySelector("dialog[open]"))return;try{const v=await call("version");if(v!==D.ver)load()}catch(e){}},60000);
+function start(){$("#gate").hidden=true;$("#lock").hidden=true;$("#app").hidden=false;applyUser();fillPer();setView(view)}
+setInterval(async()=>{if(!D||!fk||document.hidden||!navigator.onLine||document.querySelector("dialog[open]"))return;try{const v=await call("version");if(v!==D.ver)load()}catch(e){}},60000);
 (function boot(){
   if(!API){gate("NOAPI");return}
   if(!token){gate();return}
-  const owner=(ls.get("pm_data",{})||{}).user;
-  if(D&&owner&&D.user&&norm(owner.name)!==norm(D.user.name))D=null; // ganti akun di Prospek
-  if(D)start();
+  $$("[data-pro-go]").forEach(a=>a.href=PRO_IN);
+  if(!fk){lockNow();return}
   load();
 })();
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));

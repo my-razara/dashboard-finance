@@ -55,7 +55,9 @@ function doPost(e) {
 function route_(q) {
   if (q.action === 'version') return ver_();
   ensure_();
+  FK = String(q.fk || '');
   switch (q.action) {
+    case 'unlock': return prospek_('finUnlock', q.token, { pin: q.pin });
     case 'getAll': return getAll(q.token);
     case 'save': return save(q.token, q.kind, q.rec);
     case 'del': return del(q.token, q.kind, q.id);
@@ -148,13 +150,16 @@ function readSet_() {
 }
 
 /* ---------------- login (lewat Prospek) ---------------- */
+// kunci PIN Finance (dari Prospek finUnlock). Dicek ulang ke Prospek paling lama tiap 2 menit.
+let FK = '';
 function who_(token) {
   if (!token) throw new Error('AUTH');
-  const c = CacheService.getScriptCache(), key = 'W_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token)).slice(0, 40);
+  if (!FK) throw new Error('FINLOCK');
+  const c = CacheService.getScriptCache(), key = 'W_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token + '|' + FK)).slice(0, 40);
   const hit = c.get(key);
   if (hit) return JSON.parse(hit);
-  const j = prospek_('finWho', token, {});
-  c.put(key, JSON.stringify(j), 600);
+  const j = prospek_('finWho', token, { fk: FK });
+  c.put(key, JSON.stringify(j), 120);
   return j;
 }
 
@@ -166,7 +171,7 @@ function prospek_(action, token, extra) {
   let j;
   try { j = JSON.parse(res.getContentText()); } catch (e) { throw new Error('Server Prospek tidak bisa dihubungi'); }
   if (!j.ok) {
-    if (j.error === 'AUTH' || j.error === 'NOFIN') throw new Error(j.error);
+    if (['AUTH', 'NOFIN', 'FINLOCK'].indexOf(j.error) >= 0 || /^(BAD|LOCK):/.test(j.error)) throw new Error(j.error);
     if (j.error === 'UNKNOWN') throw new Error('Code.gs Prospek belum versi terbaru (perlu fitur Finance). Deploy ulang Code.gs Prospek.');
     throw new Error(j.error || 'Gagal menghubungi Prospek');
   }
@@ -271,7 +276,7 @@ function saveSettings(token, s) {
 // Pembayaran klien dari Prospek yang belum dicatat / belum diabaikan
 function prospekIn(token, from) {
   const u = who_(token), set = readSet_();
-  const list = prospek_('finPayments', token, { from: from || '' });
+  const list = prospek_('finPayments', token, { from: from || '', fk: FK });
   const done = {};
   read_('trx').forEach(t => { if (t.ref) done[t.ref] = 1; });
   read_('abaikan').forEach(a => { done[a.ref] = 1; });
