@@ -1,31 +1,29 @@
-# Finance · Keuangan & Pajak
+# Finance · Akuntansi & Pajak
 
-Aplikasi keuangan (PWA) untuk Vorent, Izinin, dan Echoffice. Pasangan dari aplikasi
-[Prospek](https://github.com/my-razara/dashboard-prospek): tampilannya sama dan login-nya juga sama,
-tapi kode, server, dan spreadsheet-nya terpisah.
+Aplikasi pembukuan (PWA) untuk Vorent, Izinin, dan Echoffice: double-entry, per PT, mulai dari tanggal pendirian.
+Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-prospek), tapi **data keuangan tidak diambil dari Prospek**. Semua diinput oleh tim finance.
 
-- **Ringkasan**: laba bersih, pemasukan, pengeluaran, saldo kas & bank, grafik 12 bulan,
-  pajak bulan ini, jatuh tempo, dan pembayaran klien dari Prospek yang belum dicocokkan.
-- **Transaksi**: pemasukan, pengeluaran, pindah dana, dan lampiran foto nota (tersimpan di Google Drive).
-- **Kas & Bank**: saldo per rekening, dihitung dari saldo awal + transaksi.
-- **Laba Rugi**: per bulan atau per tahun, per PT.
-- **Pajak**: status setor/lapor per masa (PPh 21/23/4(2)/25/26, PPN), NTPN, dan batas waktunya.
-- **Laporan Excel** dan **Pengaturan** (PT, jenis pajak, kategori).
+## Fitur (tahap Fondasi)
+- **Data Induk**: profil PT & pajak (PKP sejak, jenis pajak, kode invoice), kebijakan akuntansi, Daftar Akun (COA standar perusahaan jasa),
+  pelanggan, vendor & agen, karyawan & sales, jasa/paket, rekening bank & kas.
+- **Transaksi dengan jurnal otomatis**: penjualan (invoice, PPN, PPh 23 dipotong klien, DP), terima pembayaran, pembelian/beban (PPN masukan, potong PPh),
+  bayar tagihan, uang masuk/keluar, pindah dana, jurnal umum (template setoran modal, saldo awal, penyusutan, prive).
+- **Buku pembantu**: piutang & umur piutang, uang muka klien, utang & umur utang, mutasi kas & bank, laba per proyek/klien.
+- **Laporan**: Laba Rugi, Neraca (cek seimbang), Neraca Saldo, Buku Besar, unduh Excel.
+- **Pajak**: status setor/lapor per masa, angka dari pembukuan, catat pembayaran.
+- **Import data lama**: mutasi rekening koran (CSV/Excel) dengan aturan kata kunci & pencocokan invoice; import pelanggan/vendor dari Excel.
 
-## Akses
-Akses diatur di aplikasi Prospek → menu **Pengguna**:
-- **Admin** selalu punya akses penuh.
-- Pengguna lain bisa diberi **Finance: lihat saja** atau **Finance: kelola**,
-  untuk semua PT atau untuk satu PT saja.
+Tahap berikutnya: Payroll & BPJS, Aset Tetap & penyusutan otomatis, Tutup Buku, Arus Kas, Perubahan Ekuitas, CALK, laporan manajemen & tahunan.
+
+## Sheet di spreadsheet Finance
+Akun, Kontak, Jasa, Rekening, Dokumen (semua transaksi, rincian dalam JSON), Pajak, Pengaturan.
+Data versi lama (sheet Transaksi) dipindah otomatis ke Dokumen saat Code.gs baru pertama kali jalan.
 
 ## Pemasangan (sekali saja)
-1. Buat Google Spreadsheet baru, misalnya "Finance". Jangan pakai spreadsheet Prospek.
-2. Buka **Extensions → Apps Script**, lalu tempel isi `apps-script/Code.gs`.
-   Cek konstanta `PROSPEK_API`: isinya harus URL Web App Prospek.
-3. Pilih fungsi `setup`, klik **Run**, lalu izinkan aksesnya (Spreadsheet, Drive, dan memanggil server Prospek).
-4. **Deploy → New deployment → Web app**, dengan **Execute as: Me** dan **Who has access: Anyone**. Salin URL `/exec`-nya.
-5. Isi `API_URL` di `config.js` dengan URL tersebut.
-6. Aktifkan GitHub Pages: Settings → Pages → Branch `main` / root.
+1. Buat Google Spreadsheet baru (mis. "Finance"), bukan spreadsheet Prospek.
+2. Extensions → Apps Script → tempel `apps-script/Code.gs`. Pastikan `PROSPEK_API` = URL Web App Prospek.
+3. Jalankan fungsi `setup` sekali (Run) dan izinkan akses.
+4. Deploy → New deployment → Web app (Execute as: Me, Who has access: Anyone), salin URL `/exec` ke `config.js` (`API_URL`).
+5. GitHub Pages: Settings → Pages → Branch `main` / root.
 
-Kalau nanti ada update `Code.gs`, deploy lewat **Manage deployments → Edit → Version: New version**
-supaya URL-nya tetap sama.
+Update `Code.gs` berikutnya: **Manage deployments → Edit → Version: New version** (URL tetap).
