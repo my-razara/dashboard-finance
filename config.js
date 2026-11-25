@@ -1,6 +1,6 @@
 // Tempel URL Web App Apps Script FINANCE (hasil Deploy, berakhiran /exec) di bawah ini.
 window.APP_CONFIG = {
-  API_URL: "PASTE_URL_WEB_APP_FINANCE_DI_SINI",
+  API_URL: "https://script.google.com/macros/s/AKfycbxKR55fFM2Q45svqTcdefNEH5pAlB7rYLWgFhSUfUGEuTngphftL3gsJQpeWZzams14/exec",
   // alamat aplikasi Prospek (untuk login & tombol ganti mode)
   PROSPEK_URL: "https://my-razara.github.io/dashboard-prospek/"
 };
