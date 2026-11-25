@@ -303,6 +303,10 @@ dialog form{display:flex;flex-direction:column;max-height:92vh}
 .mcard .mc i.f{background:#0E9F6E}
 .mcard .mc b{display:block;font-size:14px}.mcard .mc small{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.3}
 .mcard .mc em{position:absolute;top:6px;right:9px;font-style:normal;color:var(--fin);font-weight:800;font-size:12px}
+#busy{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .2s}
+#busy.on{opacity:1}
+#busy::before{content:"";position:absolute;top:0;bottom:0;width:40%;background:var(--fin);border-radius:2px;animation:busy 1.1s ease-in-out infinite}
+@keyframes busy{0%{left:-40%}100%{left:100%}}
 #toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:100;max-width:90vw}
 #toast.show{opacity:1;transform:translateX(-50%)}
 @media (min-width:900px){#toast{bottom:28px}}
@@ -445,6 +449,7 @@ body.ro .w-only{display:none!important}
 </dialog>
 
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="busy" aria-hidden="true"></div>
 
 <script>
 (function(){
@@ -492,7 +497,12 @@ let trxQ={q:"",j:"",rek:"",n:60};
 const canW=()=>D&&D.user&&D.user.fin==="kelola";
 const canSet=()=>canW()&&!D.user.finPt;
 
+let inflight=0;const busy=d=>{inflight=Math.max(0,inflight+d);const b=document.getElementById("busy");if(b)b.classList.toggle("on",inflight>0)};
 async function call(action,payload){
+  if(action==="version")return call0(action,payload);
+  busy(1);try{return await call0(action,payload)}finally{busy(-1)}
+}
+async function call0(action,payload){
   if(!API)throw Object.assign(new Error("NOAPI"),{code:"NOAPI"});
   const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),90000);
   let res;
@@ -938,7 +948,7 @@ function toggleTheme(){const t=isDark()?"light":"dark";document.documentElement.
 function saveLocal(){sSet(D)}
 async function load(manual){
   syncTxt="memuat…";
-  try{const d=await call("getAll");D=d;saveLocal();syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);if($("#app").hidden)start();else{applyUser();fillPer();render()}if(manual){toast("Data diperbarui");loadInbox()}}
+  try{const d=await call("getAll");D=d;saveLocal();syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);if($("#app").hidden)start();else if(!(document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#v-trx .tfil,#v-set"))){applyUser();fillPer();render()}/* jangan ganggu yang sedang mengetik */if(manual){toast("Data diperbarui");loadInbox()}}
   catch(e){if(e.code==="AUTH"||e.code==="NOFIN")return;if(e.code==="FINLOCK"){gate();$("#gTitle").textContent="Perlu update server";$("#gText").textContent="Server Prospek masih versi lama (yang pakai PIN). Deploy ulang Code.gs Prospek: Manage deployments → Edit → New version.";$("#gBtn").href=PRO_IN;$("#gBtn").textContent="Kembali ke Prospek";return}if(e.code==="NOAPI"){gate("NOAPI");return}syncTxt=navigator.onLine?"gagal memuat":"offline";if(D)render();else{gate();$("#gText").textContent="Gagal memuat data: "+e.message;$("#gBtn").textContent="Coba lagi";$("#gBtn").href="#";$("#gBtn").onclick=ev=>{ev.preventDefault();location.reload()}}}
 }
 function start(){$("#gate").hidden=true;$("#app").hidden=false;applyUser();fillPer();setView(view)}
@@ -949,7 +959,9 @@ setInterval(async()=>{if(!D||document.hidden||!navigator.onLine||document.queryS
   $$("[data-pro-go]").forEach(a=>a.href=PRO_IN);
   const c=sGet();
   if(c){D=c;syncTxt="memperbarui…";start()}   // tampil langsung dari salinan, lalu diperbarui di belakang
-  else{$("#gate").hidden=false;$("#gTitle").textContent="Memuat…";$("#gText").textContent="Mengambil data keuangan.";$("#gBtn").hidden=true}
+  else{$("#gate").hidden=false;$("#gTitle").textContent="Memuat…";$("#gText").textContent="Mengambil data keuangan.";$("#gBtn").hidden=true;
+    // kalau server Google lambat (biasanya pertama kali dibuka setelah lama tidak dipakai), kasih tahu & sediakan tombol coba lagi
+    setTimeout(()=>{if(!D&&$("#gTitle").textContent==="Memuat…"){$("#gText").textContent="Server Google sedang lambat merespons, biasanya hanya beberapa detik. Tunggu sebentar atau coba lagi.";const b=$("#gBtn");b.hidden=false;b.textContent="Coba lagi";b.href="#";b.onclick=ev=>{ev.preventDefault();location.reload()}}},12000)}
   load();loadInbox();   // data & pembayaran Prospek diambil bersamaan
 })();
 // versi baru aplikasi langsung dipakai (muat ulang sekali saat service worker baru aktif)
