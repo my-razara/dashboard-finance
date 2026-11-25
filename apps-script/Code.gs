@@ -55,9 +55,7 @@ function doPost(e) {
 function route_(q) {
   if (q.action === 'version') return ver_();
   ensure_();
-  FK = String(q.fk || '');
   switch (q.action) {
-    case 'unlock': return unlock(q.token, q.pin);
     case 'getAll': return getAll(q.token);
     case 'save': return save(q.token, q.kind, q.rec);
     case 'del': return del(q.token, q.kind, q.id);
@@ -150,15 +148,13 @@ function readSet_() {
 }
 
 /* ---------------- login (lewat Prospek) ---------------- */
-// kunci PIN Finance (dari Prospek finUnlock). Dicek ulang ke Prospek paling lama tiap 2 menit.
-let FK = '';
+// siapa pengguna ini & aksesnya (dicek ke Prospek, disimpan sementara 2 menit)
 function who_(token) {
   if (!token) throw new Error('AUTH');
-  if (!FK) throw new Error('FINLOCK');
-  const c = CacheService.getScriptCache(), key = 'W_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token + '|' + FK)).slice(0, 40);
+  const c = CacheService.getScriptCache(), key = 'W_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token)).slice(0, 40);
   const hit = c.get(key);
   if (hit) return JSON.parse(hit);
-  const j = prospek_('finWho', token, { fk: FK });
+  const j = prospek_('finWho', token, {});
   c.put(key, JSON.stringify(j), 120);
   return j;
 }
@@ -185,12 +181,6 @@ function writer_(u, pt) {
 }
 
 /* ---------------- API ---------------- */
-// buka kunci PIN lalu langsung kirim semua data (satu kali jalan, tidak perlu panggilan kedua)
-function unlock(token, pin) {
-  const r = prospek_('finUnlock', token, { pin: pin });
-  FK = r.fk;
-  return Object.assign({ fk: r.fk }, getAll(token));
-}
 
 function getAll(token) {
   const u = who_(token), set = readSet_();
@@ -283,7 +273,7 @@ function saveSettings(token, s) {
 // Pembayaran klien dari Prospek yang belum dicatat / belum diabaikan
 function prospekIn(token, from) {
   const u = who_(token), set = readSet_();
-  const list = prospek_('finPayments', token, { from: from || '', fk: FK });
+  const list = prospek_('finPayments', token, { from: from || '' });
   const done = {};
   read_('trx').forEach(t => { if (t.ref) done[t.ref] = 1; });
   read_('abaikan').forEach(a => { done[a.ref] = 1; });
