@@ -478,8 +478,12 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");cl
 
 /* ---------- state ---------- */
 let token=ls.get("pm_token",null);
-let D=null; // {user,settings,trx,rek,pajak,ver} — hanya di memori (tidak disimpan di perangkat)
+let D=null; // {user,settings,trx,rek,pajak,ver}
 ls.del("fin_data");
+// salinan data hanya selama aplikasi terbuka (sessionStorage, hilang saat aplikasi/tab ditutup)
+// supaya pindah Prospek ⇄ Finance langsung tampil tanpa menunggu server
+const SK="fin_s",sGet=()=>{try{const o=JSON.parse(sessionStorage.getItem(SK)||"null");return o&&o.t===token?o.d:null}catch(e){return null}};
+const sSet=d=>{try{d?sessionStorage.setItem(SK,JSON.stringify({t:token,d})):sessionStorage.removeItem(SK)}catch(e){}};
 
 let PT=ls.get("fin_pt","");       // "" = semua
 let PER=ls.get("fin_per",TODAY.slice(0,7)); // yyyy-MM atau yyyy
@@ -506,8 +510,8 @@ function gate(kind){
   $("#app").hidden=true;$("#gate").hidden=false;$("#gBtn").hidden=false;
   const b=$("#gBtn");b.href=PRO_URL+"?ke=finance";b.textContent="Masuk lewat Prospek";$("#gHint").textContent="";
   if(kind==="NOAPI"){$("#gTitle").textContent="Finance belum terhubung";$("#gText").textContent="URL server Finance belum diisi di config.js. Ikuti panduan pemasangan (README).";b.href=PRO_URL;b.textContent="Kembali ke Prospek"}
-  else if(kind==="NOFIN"){const n=(ls.get("pm_data",{})||{}).user;$("#gTitle").textContent="Maaf, halaman ini terbatas";$("#gText").textContent=`${n&&n.name?"Halo "+n.name+", a":"A"}kun kamu belum punya akses ke Finance. Halaman ini khusus untuk tim yang menangani keuangan. Kalau kamu memerlukan akses, silakan hubungi admin ya. Terima kasih 🙏`;b.href=PRO_IN;$(".gate .app-logo").innerHTML='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';b.textContent="Kembali ke Prospek";ls.del("fin_data");D=null}
-  else if(kind==="AUTH"){$("#gTitle").textContent="Sesi berakhir";$("#gText").textContent="Silakan masuk lagi lewat aplikasi Prospek. Setelah masuk kamu otomatis kembali ke sini.";ls.del("fin_data");D=null}
+  else if(kind==="NOFIN"){const n=(ls.get("pm_data",{})||{}).user;$("#gTitle").textContent="Maaf, halaman ini terbatas";$("#gText").textContent=`${n&&n.name?"Halo "+n.name+", a":"A"}kun kamu belum punya akses ke Finance. Halaman ini khusus untuk tim yang menangani keuangan. Kalau kamu memerlukan akses, silakan hubungi admin ya. Terima kasih 🙏`;b.href=PRO_IN;$(".gate .app-logo").innerHTML='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';b.textContent="Kembali ke Prospek";ls.del("fin_data");sSet(null);D=null}
+  else if(kind==="AUTH"){$("#gTitle").textContent="Sesi berakhir";$("#gText").textContent="Silakan masuk lagi lewat aplikasi Prospek. Setelah masuk kamu otomatis kembali ke sini.";ls.del("fin_data");sSet(null);D=null}
   else{$("#gTitle").textContent="Finance";$("#gText").textContent="Keuangan & pajak. Masuk memakai akun aplikasi Prospek, lalu kamu otomatis diarahkan ke sini."}
 }
 
@@ -643,7 +647,7 @@ function inboxHTML(lim){
   return L.slice(0,lim||99).map(x=>`<div class="match"><span class="lt"><b>${esc(x.klien||x.nama)} · ${esc(x.jenis)}</b><small><span class="tg acc">Prospek</span> ${esc(x.pic)}${x.bank?" · "+esc(x.bank.split(/\s/)[0]):""} · ${fmtDs(x.tgl)}${x.pt?"":" · PT?"}</small></span><span class="acts"><b>${rpS(x.nominal)}</b><div class="w-only"><button class="btn sm" type="button" data-ign="${esc(x.ref)}" title="Bukan transaksi bank / sudah tercatat">Abaikan</button><button class="btn sm ok" type="button" data-match="${esc(x.ref)}">Cocok</button></div></span></div>`).join("")+(L.length>(lim||99)?`<button class="btn sm more" type="button" data-act="allinbox">Lihat ${L.length-(lim||99)} lainnya</button>`:"");
 }
 async function loadInbox(){
-  if(!D||!navigator.onLine)return;
+  if(!navigator.onLine)return;
   const from=addM(TODAY.slice(0,7),-2)+"-01";
   try{inbox=await call("prospekIn",{from})}catch(e){if(e.code==="AUTH"||e.code==="NOFIN")return;inbox=Object.assign([],{err:e.message})}
   if(view==="home"){const el=$("#inboxL");if(el)el.innerHTML=inboxHTML(inboxLim);else render()}
@@ -931,10 +935,10 @@ function themeTxt(){$$("[data-themetxt]").forEach(e=>e.textContent=isDark()?"Mod
 function toggleTheme(){const t=isDark()?"light":"dark";document.documentElement.setAttribute("data-theme",t);ls.set("pm_theme",t);themeTxt()}
 
 /* ---------- load ---------- */
-function saveLocal(){}
+function saveLocal(){sSet(D)}
 async function load(manual){
   syncTxt="memuat…";
-  try{const d=await call("getAll");D=d;saveLocal();syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);start();if(manual)toast("Data diperbarui");loadInbox()}
+  try{const d=await call("getAll");D=d;saveLocal();syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);if($("#app").hidden)start();else{applyUser();fillPer();render()}if(manual){toast("Data diperbarui");loadInbox()}}
   catch(e){if(e.code==="AUTH"||e.code==="NOFIN")return;if(e.code==="FINLOCK"){gate();$("#gTitle").textContent="Perlu update server";$("#gText").textContent="Server Prospek masih versi lama (yang pakai PIN). Deploy ulang Code.gs Prospek: Manage deployments → Edit → New version.";$("#gBtn").href=PRO_IN;$("#gBtn").textContent="Kembali ke Prospek";return}if(e.code==="NOAPI"){gate("NOAPI");return}syncTxt=navigator.onLine?"gagal memuat":"offline";if(D)render();else{gate();$("#gText").textContent="Gagal memuat data: "+e.message;$("#gBtn").textContent="Coba lagi";$("#gBtn").href="#";$("#gBtn").onclick=ev=>{ev.preventDefault();location.reload()}}}
 }
 function start(){$("#gate").hidden=true;$("#app").hidden=false;applyUser();fillPer();setView(view)}
@@ -943,8 +947,10 @@ setInterval(async()=>{if(!D||document.hidden||!navigator.onLine||document.queryS
   if(!API){gate("NOAPI");return}
   if(!token){gate();return}
   $$("[data-pro-go]").forEach(a=>a.href=PRO_IN);
-  $("#gate").hidden=false;$("#gTitle").textContent="Memuat…";$("#gText").textContent="Mengambil data keuangan.";$("#gBtn").hidden=true;
-  load();
+  const c=sGet();
+  if(c){D=c;syncTxt="memperbarui…";start()}   // tampil langsung dari salinan, lalu diperbarui di belakang
+  else{$("#gate").hidden=false;$("#gTitle").textContent="Memuat…";$("#gText").textContent="Mengambil data keuangan.";$("#gBtn").hidden=true}
+  load();loadInbox();   // data & pembayaran Prospek diambil bersamaan
 })();
 // versi baru aplikasi langsung dipakai (muat ulang sekali saat service worker baru aktif)
 if("serviceWorker" in navigator){const had=!!navigator.serviceWorker.controller;let done=false;

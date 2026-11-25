@@ -148,14 +148,14 @@ function readSet_() {
 }
 
 /* ---------------- login (lewat Prospek) ---------------- */
-// siapa pengguna ini & aksesnya (dicek ke Prospek, disimpan sementara 2 menit)
+// siapa pengguna ini & aksesnya (dicek ke Prospek, disimpan sementara 10 menit supaya cepat)
 function who_(token) {
   if (!token) throw new Error('AUTH');
   const c = CacheService.getScriptCache(), key = 'W_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token)).slice(0, 40);
   const hit = c.get(key);
   if (hit) return JSON.parse(hit);
   const j = prospek_('finWho', token, {});
-  c.put(key, JSON.stringify(j), 120);
+  c.put(key, JSON.stringify(j), 600);   // akses yang dicabut berlaku paling lama 10 menit
   return j;
 }
 
