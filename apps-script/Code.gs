@@ -57,7 +57,7 @@ function route_(q) {
   ensure_();
   FK = String(q.fk || '');
   switch (q.action) {
-    case 'unlock': return prospek_('finUnlock', q.token, { pin: q.pin });
+    case 'unlock': return unlock(q.token, q.pin);
     case 'getAll': return getAll(q.token);
     case 'save': return save(q.token, q.kind, q.rec);
     case 'del': return del(q.token, q.kind, q.id);
@@ -185,6 +185,13 @@ function writer_(u, pt) {
 }
 
 /* ---------------- API ---------------- */
+// buka kunci PIN lalu langsung kirim semua data (satu kali jalan, tidak perlu panggilan kedua)
+function unlock(token, pin) {
+  const r = prospek_('finUnlock', token, { pin: pin });
+  FK = r.fk;
+  return Object.assign({ fk: r.fk }, getAll(token));
+}
+
 function getAll(token) {
   const u = who_(token), set = readSet_();
   const f = o => canPt_(u, o.pt);

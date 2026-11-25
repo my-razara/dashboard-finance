@@ -513,7 +513,7 @@ const canSet=()=>canW()&&!D.user.finPt;
 
 async function call(action,payload){
   if(!API)throw Object.assign(new Error("NOAPI"),{code:"NOAPI"});
-  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),90000);
   let res;
   try{res=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action,token,fk},payload||{})),redirect:"follow",signal:ctl.signal})}
   catch(e){throw Object.assign(new Error(navigator.onLine?"Server tidak merespons. Coba lagi.":"Tidak ada internet."),{code:"NET"})}
@@ -540,9 +540,10 @@ let lkBusy=false;
 $("#lockFrm").addEventListener("submit",async e=>{
   e.preventDefault();const pin=$("#lkPin").value;if(!/^\d{6}$/.test(pin)||lkBusy)return;
   const b=$("#lkBtn");lkBusy=true;b.disabled=true;b.textContent="Membuka…";
-  try{const r=await call("unlock",{pin});fk=r.fk;sss("fin_fk",fk);lastAct=Date.now();$("#lock").hidden=true;await load()}
+  try{const r=await call("unlock",{pin});fk=r.fk;sss("fin_fk",fk);lastAct=Date.now();delete r.fk;
+    if(r.user&&r.settings){D=r;syncTxt="tersinkron "+new Date().toTimeString().slice(0,5);start();loadInbox()}else{b.textContent="Memuat data…";await load()}}
   catch(x){const c=String(x.code||"");$("#lkPin").value="";
-    lkMsg(c.startsWith("BAD:")?`PIN salah. Sisa ${c.split(":")[1]} kali percobaan.`:c.startsWith("LOCK:")?`Terlalu banyak salah. Coba lagi ${c.split(":")[1]} menit lagi.`:x.message)}
+    lkMsg(c.startsWith("BAD:")?`PIN salah. Sisa ${c.split(":")[1]} kali percobaan.`:c.startsWith("LOCK:")?`Terlalu banyak salah. Coba lagi ${c.split(":")[1]} menit lagi.`:c==="UNKNOWN"?"Code.gs Finance belum versi terbaru. Deploy ulang (Manage deployments → Edit → New version).":x.message)}
   finally{lkBusy=false;b.textContent="Buka Finance";lkPaint()}
 });
 ["pointerdown","keydown","scroll","touchstart"].forEach(ev=>document.addEventListener(ev,()=>{lastAct=Date.now()},{passive:true}));
