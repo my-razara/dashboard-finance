@@ -99,7 +99,7 @@ a{color:var(--acc-ink)}
 .bdg{position:absolute;top:-2px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;font-weight:800;display:grid;place-items:center;padding:0 4px}
 .view{display:none}
 body[data-v="gaji"] .pill.hide-m,body[data-v="induk"] #ptbar,body[data-v="imp"] #ptbar,body[data-v="induk"] .pill,body[data-v="pajak"] .pill,body[data-v="imp"] .pill{display:none!important}
-body[data-v="home"] #v-home,body[data-v="jual"] #v-jual,body[data-v="beli"] #v-beli,body[data-v="kas"] #v-kas,body[data-v="jurnal"] #v-jurnal,body[data-v="proyek"] #v-proyek,body[data-v="pajak"] #v-pajak,body[data-v="lap"] #v-lap,body[data-v="induk"] #v-induk,body[data-v="imp"] #v-imp,body[data-v="gaji"] #v-gaji,body[data-v="aset"] #v-aset{display:block}
+body[data-v="home"] #v-home,body[data-v="jual"] #v-jual,body[data-v="beli"] #v-beli,body[data-v="kas"] #v-kas,body[data-v="jurnal"] #v-jurnal,body[data-v="proyek"] #v-proyek,body[data-v="pajak"] #v-pajak,body[data-v="lap"] #v-lap,body[data-v="induk"] #v-induk,body[data-v="imp"] #v-imp,body[data-v="gaji"] #v-gaji,body[data-v="aset"] #v-aset,body[data-v="tutup"] #v-tutup{display:block}
 @media (min-width:900px){
   .side{display:flex;flex-direction:column;gap:6px;width:250px;flex:none;position:sticky;top:0;height:100vh;padding:20px 14px;border-right:1px solid var(--line);background:var(--panel);overflow:auto}
   .side-brand{display:flex;align-items:center;gap:11px;padding:2px 8px 10px}
@@ -233,6 +233,25 @@ table.lr{border-collapse:collapse;width:100%;min-width:420px;font-size:14px}
 
 /* ---------- pajak ---------- */
 .pjbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.tckl{display:flex;flex-direction:column}
+.tck{display:flex;gap:12px;align-items:flex-start;padding:12px 2px;border-top:1px solid var(--line)}
+.tckl>.tck:first-child{border-top:0;padding-top:2px}
+.tck .ic{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--panel-2);color:var(--ink-3)}
+.tck .ic.ok{background:var(--ok-soft);color:var(--ok-ink)}.tck .ic.no{background:var(--warn-soft);color:var(--warn-ink)}.tck .ic.bad{background:var(--bad-soft);color:var(--bad-ink)}
+.tck .bd{flex:1;min-width:0}.tck .bd b{display:block;font-size:14.5px;font-weight:650}.tck .bd small{color:var(--ink-3);font-size:13px;display:block;margin-top:2px}
+.tck .bd a{color:var(--acc-ink)}.tck .ac{flex:none}
+label.tck{cursor:pointer}label.tck input{width:20px;height:20px;margin:3px;flex:none;accent-color:var(--ok)}
+.tbrk .r{display:grid;grid-template-columns:2fr 1fr 1.3fr .8fr;gap:8px 14px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.tbrk .r:first-child{border-top:0;padding-top:0}
+.tbrk small{display:block;color:var(--ink-3);font-size:12px;font-weight:500;margin-bottom:3px}.tbrk .n small{margin:2px 0 0}
+.tbrk .b,.tbrk .s{text-align:right;font-variant-numeric:tabular-nums}
+.tbrk input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);font:inherit;text-align:right;color:var(--ink)}
+@media (max-width:700px){.tbrk .r{grid-template-columns:1fr 1fr}.tbrk .n{grid-column:1/-1}.tbrk .k{grid-column:1/-1;order:3}.tbrk .b{text-align:left}}
+.lockb{background:var(--ok-soft);color:var(--ok-ink);border-radius:12px;padding:10px 14px;font-weight:650;margin-bottom:12px;line-height:1.6}
+.lockb.full{grid-column:1/-1;margin:0}
+.tbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tbs>div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.tbs small{display:block;color:var(--ink-3);font-size:12.5px;margin-bottom:2px}.tbs b{font-size:17px;font-weight:750}
 .pjprog{display:flex;align-items:center;gap:10px 14px;margin-bottom:12px;flex-wrap:wrap}
 .pjprog .ring{width:52px;height:52px;flex:none}
 .pjprog b{font-size:17px}
@@ -442,7 +461,7 @@ dialog.mid{width:min(620px,96vw)}
   <aside class="side" aria-label="Menu utama">
     <div class="side-brand"><span class="app-logo"><svg viewBox="0 0 64 64" width="32" height="32" aria-hidden="true"><rect x="14" y="34" width="9" height="16" rx="4.5" fill="#fff"/><rect x="27.5" y="25" width="9" height="25" rx="4.5" fill="#fff"/><rect x="41" y="14" width="9" height="36" rx="4.5" fill="#FFC53D"/></svg></span><div><b>Finance</b><small>Akuntansi &amp; pajak</small></div></div>
     <div class="mode-sw"><a href="#" data-pro-go>Prospek</a><span class="on">Finance</span></div>
-    <button type="button" class="snav" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Ringkasan</button><div class="side-h">Pembukuan</div><button type="button" class="snav" data-view="jual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Penjualan</button><button type="button" class="snav" data-view="beli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Pembelian & Beban</button><button type="button" class="snav" data-view="kas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M19 10v8M9.5 10v8M14.5 10v8M3 21h18"/></svg>Kas & Bank</button><button type="button" class="snav" data-view="jurnal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>Jurnal Umum</button><button type="button" class="snav" data-view="proyek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Proyek / Klien</button><button type="button" class="snav" data-view="gaji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/></svg>Payroll & BPJS</button><button type="button" class="snav" data-view="aset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11"/></svg>Aset Tetap</button><div class="side-h">Pajak & Tutup Buku</div><button type="button" class="snav" data-view="pajak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Pajak<span class=bdg data-pjbdg hidden></span></button><button type="button" class="snav soon" data-soon="Tutup Buku" title="Tahap berikutnya"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tutup Buku<span class="tg mini">nanti</span></button><button type="button" class="snav" data-view="lap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l6-6 4 4 6-8"/><path d="M15 9h5v5"/></svg>Laporan</button><div class="side-h">Pengaturan</div><button type="button" class="snav" data-view="induk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Induk</button><button type="button" class="snav" data-view="imp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Import Data Lama</button>
+    <button type="button" class="snav" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Ringkasan</button><div class="side-h">Pembukuan</div><button type="button" class="snav" data-view="jual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Penjualan</button><button type="button" class="snav" data-view="beli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Pembelian & Beban</button><button type="button" class="snav" data-view="kas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M19 10v8M9.5 10v8M14.5 10v8M3 21h18"/></svg>Kas & Bank</button><button type="button" class="snav" data-view="jurnal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg>Jurnal Umum</button><button type="button" class="snav" data-view="proyek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Proyek / Klien</button><button type="button" class="snav" data-view="gaji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/></svg>Payroll & BPJS</button><button type="button" class="snav" data-view="aset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16M6 20V9l6-5 6 5v11"/></svg>Aset Tetap</button><div class="side-h">Pajak & Tutup Buku</div><button type="button" class="snav" data-view="pajak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Pajak<span class=bdg data-pjbdg hidden></span></button><button type="button" class="snav" data-view="tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tutup Buku</button><button type="button" class="snav" data-view="lap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19l6-6 4 4 6-8"/><path d="M15 9h5v5"/></svg>Laporan</button><div class="side-h">Pengaturan</div><button type="button" class="snav" data-view="induk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Induk</button><button type="button" class="snav" data-view="imp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Import Data Lama</button>
     <button type="button" class="snav" data-act="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13l4 5M13 13l-4 5"/></svg>Download Excel</button>
     <button type="button" class="snav" data-act="theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span data-themetxt>Mode malam</span></button>
     <div class="side-foot"><span class="av" data-ini></span><div><b data-uname></b><small data-urole></small></div></div>
@@ -467,6 +486,7 @@ dialog.mid{width:min(620px,96vw)}
     <section class="view" id="v-gaji"></section>
     <section class="view" id="v-aset"></section>
     <section class="view" id="v-pajak"></section>
+    <section class="view" id="v-tutup"></section>
     <section class="view" id="v-lap"></section>
     <section class="view" id="v-induk"></section>
     <section class="view" id="v-imp"></section>
@@ -484,7 +504,7 @@ dialog.mid{width:min(620px,96vw)}
   <div class="mcard"><a class="mc" href="#" data-pro-go><i>P</i><span><b>Prospek</b><small>Klien, follow-up, invoice</small></span></a><span class="mc on"><i class="f">F</i><span><b>Finance</b><small>Akuntansi &amp; pajak</small></span><em>✓</em></span></div>
   <div class="who">Masuk sebagai <b data-uname></b> · <span data-urole></span> · <span class="sync" data-sync></span></div>
   <label class="f" style="margin:0 6px 8px">Bulan<select id="mo2" aria-label="Bulan"></select></label>
-  <button type="button" class="it" data-view="jual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Penjualan</button><button type="button" class="it" data-view="beli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Pembelian & Beban</button><button type="button" class="it" data-view="kas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M19 10v8M9.5 10v8M14.5 10v8M3 21h18"/></svg>Kas & Bank</button><button type="button" class="it" data-view="proyek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Proyek / Klien</button><button type="button" class="it" data-view="gaji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Payroll &amp; BPJS</button><button type="button" class="it" data-view="aset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Aset Tetap</button><button type="button" class="it" data-view="pajak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Pajak</button><button type="button" class="it" data-view="induk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Induk</button><button type="button" class="it" data-view="imp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Import Data Lama</button>
+  <button type="button" class="it" data-view="jual"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Penjualan</button><button type="button" class="it" data-view="beli"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>Pembelian & Beban</button><button type="button" class="it" data-view="kas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M19 10v8M9.5 10v8M14.5 10v8M3 21h18"/></svg>Kas & Bank</button><button type="button" class="it" data-view="proyek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Proyek / Klien</button><button type="button" class="it" data-view="gaji"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Payroll &amp; BPJS</button><button type="button" class="it" data-view="aset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3zM8 7V4h8v3"/></svg>Aset Tetap</button><button type="button" class="it" data-view="pajak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Pajak</button><button type="button" class="it" data-view="tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tutup Buku</button><button type="button" class="it" data-view="induk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Induk</button><button type="button" class="it" data-view="imp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Import Data Lama</button>
   <button type="button" class="it" data-act="xlsx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13l4 5M13 13l-4 5"/></svg>Download Excel</button>
   <button type="button" class="it" data-act="theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span data-themetxt>Mode malam</span></button>
   <button type="button" class="it" data-act="reload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Muat ulang data</button>
@@ -719,7 +739,7 @@ const ptOpts=(sel,blank)=>(blank?`<option value="">${esc(blank)}</option>`:"")+p
 const kontakByName=(n,tipes)=>{const k=norm(n);if(!k)return null;return D.kontak.find(x=>norm(x.nama)===k&&(!tipes||tipes.includes(x.tipe)))||D.kontak.find(x=>norm(x.nama)===k)||null};
 
 /* ---------- shell ---------- */
-const VIEW_T={gaji:"Payroll & BPJS",aset:"Aset Tetap",home:"Ringkasan",jual:"Penjualan",beli:"Pembelian & Beban",kas:"Kas & Bank",jurnal:"Jurnal Umum",proyek:"Proyek / Klien",pajak:"Pajak",lap:"Laporan",induk:"Data Induk",imp:"Import Data Lama"};
+const VIEW_T={tutup:"Tutup Buku",gaji:"Payroll & BPJS",aset:"Aset Tetap",home:"Ringkasan",jual:"Penjualan",beli:"Pembelian & Beban",kas:"Kas & Bank",jurnal:"Jurnal Umum",proyek:"Proyek / Klien",pajak:"Pajak",lap:"Laporan",induk:"Data Induk",imp:"Import Data Lama"};
 function setView(v){if(!VIEW_T[v])v="home";view=v;document.body.dataset.v=v;$("#vTitle").textContent=VIEW_T[v];
   $$("[data-view]").forEach(b=>{if(b.classList.contains("snav")||b.closest(".bnav")){b.classList.toggle("on",b.dataset.view===v);b.setAttribute("aria-current",b.dataset.view===v?"page":"false")}});
   ls.set("fin_v2",v);render();try{window.scrollTo(0,0)}catch(e){}}
@@ -748,7 +768,7 @@ let syncTxt="";
 function render(){
   if(!D)return;paintPtbar();
   const b=pjOpen().filter(x=>daysTo(x.next)<=7).length;$$("[data-pjbdg]").forEach(e=>{e.hidden=!b;e.textContent=b});
-  ({gaji:rGaji,aset:rAset,home:rHome,jual:rJual,beli:rBeli,kas:rKas,jurnal:rJurnal,proyek:rProyek,pajak:rPajak,lap:rLap,induk:rInduk,imp:rImp})[view]();
+  ({tutup:rTutup,gaji:rGaji,aset:rAset,home:rHome,jual:rJual,beli:rBeli,kas:rKas,jurnal:rJurnal,proyek:rProyek,pajak:rPajak,lap:rLap,induk:rInduk,imp:rImp})[view]();
   $$("[data-sync]").forEach(e=>{e.textContent=syncTxt;e.classList.toggle("bad",/gagal|offline/i.test(syncTxt))});
 }
 const tabs=(cur,list,attr)=>`<div class="tabs" role="tablist">${list.map(([k,n])=>`<button type="button" data-${attr}="${k}" class="${k===cur?"on":""}" role="tab" aria-selected="${k===cur}">${n}</button>`).join("")}</div>`;
@@ -925,9 +945,10 @@ function openDoc(jenis,o,pre){
     if(J==="aset"){d.nama="";d.akun="1-2101";d.nilai=0;d.umur=48;d.residu=0;d.mulai=TODAY.slice(0,7);d.bayar=(D.rek.find(r=>r.pt===ED.pt&&r.aktif!=="tidak")||{}).id||"utang"}
     if(pre)Object.keys(pre).forEach(k=>{if(k==="d")Object.assign(d,pre.d);else ED[k]=pre[k]});
   }else{d.ppnOn=!!N(d.ppnAmt);d.pphOn=!!N(d.pphAmt)}
-  $("#docTtl").textContent=(o?"Ubah: ":"")+TTL[J]+(o&&o.no?" · "+o.no:"");
+  ED.locked=!!o&&isLocked(o.pt,o.tgl);
+  $("#docTtl").textContent=(o?(ED.locked?"🔒 ":"Ubah: "):"")+TTL[J]+(o&&o.no?" · "+o.no:"");
   paintDoc();
-  $("#docDel").hidden=!o||!canW();$("#docSave").hidden=!canW()||ED.jenis==="susut";
+  $("#docDel").hidden=!o||!canW()||ED.locked;$("#docSave").hidden=!canW()||ED.jenis==="susut"||ED.locked;
   $("#docDlg").showModal();
 }
 function rowsTbl(key,cols,addLbl){
@@ -946,6 +967,7 @@ function alokHTML(jenis){
 function paintDoc(){
   const J=ED.jenis,d=ED.d;let h="";
   const ptSel=`<select data-f="pt">${ptOpts(ED.pt)}</select>`;
+  if(ED.locked)h+=`<div class="lockb full">🔒 ${fmtMasa(ED.tgl.slice(0,7))} ${esc(ED.pt)} sudah tutup buku, transaksi ini hanya bisa dilihat.${canW()?" Kalau perlu diubah, buka kembali periodenya di menu Tutup Buku.":""}</div>`;
   h+=fld("Tanggal",`<input type="date" data-f="tgl" value="${esc(ED.tgl)}">`)+fld("PT",ptSel);
   if(J==="jual"){
     h+=fld("Pelanggan",inp("kontak",ED.kontak,'list="dl_pel" placeholder="Nama pelanggan" autocomplete="off"'))+fld("No invoice",inp("no",ED.no,'placeholder="otomatis"'));
@@ -1003,7 +1025,7 @@ function paintDoc(){
   }
   h+=`<label class="upl"><input type="file" id="d_file" accept="image/*,application/pdf"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg><span id="d_filet">${ED.file?"📎 "+esc(ED.file.name):ED.bukti?"Bukti terlampir · ganti":"Lampirkan bukti (foto / PDF)"}</span>${ED.bukti?`<a href="${esc(ED.bukti)}" target="_blank" rel="noopener">Lihat</a>`:""}</label><div class="err" id="d_err" role="alert"></div>`;
   $("#docBody").innerHTML=h;
-  $$("#docBody input,#docBody select,#docBody button.rx,#docBody .addr").forEach(el=>{if(!canW())el.disabled=true});
+  $$("#docBody input,#docBody select,#docBody button.rx,#docBody .addr,#docBody [data-gload]").forEach(el=>{if(!canW()||ED.locked)el.disabled=true});
   updDoc();
 }
 function readDoc(){
@@ -1031,7 +1053,7 @@ function updDoc(){
   const kid=(kontakByName(ED.kontak)||{}).id||(ED.kontak?"~"+ED.kontak:"");
   const L=linesOf({jenis:J,kontak:kid,proyek:ED.proyek,d});const td=sumBy(L,l=>l.d),tk=sumBy(L,l=>l.k);
   $("#docSide").innerHTML=`<h4><span>Jurnal otomatis</span>${L.length?(Math.round(td-tk)?`<span class="balok bad">Selisih ${fN(td-tk)}</span>`:`<span class="balok ok">✓ Seimbang</span>`):""}</h4>${L.length?`<table class="jurp"><tr><th>Akun</th><th class="r">Debit</th><th class="r">Kredit</th></tr>${L.map(l=>`<tr><td>${esc(l.akun+" "+akNm(l.akun))}${l.kontak?`<small>${esc(l.kontak.startsWith("~")?l.kontak.slice(1)+" (baru)":ktNm(l.kontak))}</small>`:""}${l.proyek?`<small>Proyek: ${esc(l.proyek)}</small>`:""}</td><td class="r">${l.d?fN(l.d):""}</td><td class="r">${l.k?fN(l.k):""}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="r">${fN(td)}</td><td class="r">${fN(tk)}</td></tr></table>`:`<p class="hint">Isi form di samping, jurnal debit/kredit terbentuk otomatis di sini.</p>`}
-    ${ED.orig?`<p class="hint" style="margin-top:12px">Dicatat ${esc(ED.orig.oleh||"")} · ${esc(String(ED.orig.dibuat||"").slice(0,10))}${ED.orig.diubah&&ED.orig.diubah!==ED.orig.dibuat?" · diubah "+esc(String(ED.orig.diubah).slice(0,10)):""}</p>`:""}`;
+    ${ED.orig?`<p class="hint" style="margin-top:12px">Dicatat ${esc(ED.orig.oleh||"")} · ${esc(locD(ED.orig.dibuat))}${ED.orig.diubah&&ED.orig.diubah!==ED.orig.dibuat?" · diubah "+esc(locD(ED.orig.diubah)):""}</p>`:""}`;
 }
 $("#docBody").addEventListener("input",e=>{
   const t=e.target;readDoc();
@@ -1066,6 +1088,7 @@ function validDoc(){
   const J=ED.jenis,d=ED.d,L=linesOf({jenis:J,kontak:"x",proyek:ED.proyek,d});
   if(!/^\d{4}-\d{2}-\d{2}$/.test(ED.tgl))return "Isi tanggal.";
   if(!ED.pt)return "Pilih PT.";
+  if(isLocked(ED.pt,ED.tgl))return "Tanggal "+fmtD(ED.tgl)+" masuk periode "+ED.pt+" yang sudah tutup buku (terkunci s.d. "+fmtMasa(lockS(ED.pt))+"). Pakai tanggal setelahnya, atau buka kembali periodenya di menu Tutup Buku.";
   if(J==="jual"){if(!ED.kontak.trim())return "Isi nama pelanggan.";if(!(d.items||[]).some(i=>N(i.harga)>0))return "Isi minimal satu jasa dengan harga.";if((d.items||[]).some(i=>N(i.harga)&&!i.akun))return "Pilih akun pendapatan di tiap baris.";if(calcJual(d).piut<0)return "DP yang dipakai lebih besar dari tagihan.";if(N(d.dp)>dpAvail()+0.5)return "DP yang dipakai lebih besar dari DP yang tersedia ("+rp(dpAvail())+").";}
   if(J==="beli"){if(!(d.items||[]).some(i=>N(i.harga)>0))return "Isi minimal satu baris dengan jumlah.";if((d.items||[]).some(i=>N(i.harga)&&!i.akun))return "Pilih akun di tiap baris.";if(d.bayar==="utang"&&!ED.kontak.trim())return "Tagihan yang belum dibayar perlu nama vendor.";}
   if(J==="terima"||J==="bayar"){if(!ED.kontak.trim())return "Isi nama "+(J==="terima"?"pelanggan.":"vendor.");if(!d.rek)return "Pilih rekening.";if(!(sumBy(d.alok,a=>a.jml)+N(d.dp)>0))return J==="terima"?"Pilih invoice yang dibayar atau isi uang muka.":"Pilih tagihan yang dibayar.";
@@ -1095,7 +1118,7 @@ async function ensureKontak(name,tipe){
   const r=await call("save",{kind:"kontak",rec:{tipe,nama:n,aktif:"ya"}});D.kontak.push(r.rec);KT[r.rec.id]=r.rec;D.ver=r.ver;return r.rec.id;
 }
 $("#docFrm").addEventListener("submit",async e=>{
-  e.preventDefault();if(!canW())return;readDoc();updDoc();
+  e.preventDefault();if(!canW()||ED.locked)return;readDoc();updDoc();
   const err=validDoc();$("#d_err").textContent=err;if(err)return;
   const b=$("#docSave");b.disabled=true;b.textContent="Menyimpan…";
   try{
@@ -1185,12 +1208,96 @@ function rAset(){
   }
   $("#v-aset").innerHTML=h;
 }
-async function catatSusut(){
-  const ym=asOf().slice(0,7),due=asetDue(PT,ym);if(!due.length)return;
+async function catatSusut(ptA,ymA){
+  const ym=ymA||asOf().slice(0,7),all=asetDue(ptA!==undefined?ptA:PT,ym),due=all.filter(x=>!isLocked(x.o.pt,lastDay(x.ym)));
+  if(!due.length){if(all.length)toast("Penyusutan yang belum dicatat ada di periode yang sudah tutup buku. Buka kembali periodenya dulu.");return}
   const by={};due.forEach(x=>{const k=x.o.pt+"|"+x.ym;(by[k]=by[k]||[]).push({aset:x.o.id,jml:x.v})});
-  const keys=Object.keys(by).sort();if(!confirm(`Catat ${keys.length} jurnal penyusutan (${due.length} baris) s.d. ${fmtMasa(ym)}?`))return;
+  const keys=Object.keys(by).sort();if(!confirm(`Catat ${keys.length} jurnal penyusutan (${due.length} baris) s.d. ${fmtMasa(ym)}?`+(all.length>due.length?`\n\n${all.length-due.length} baris di periode yang sudah tutup buku dilewati.`:"")))return;
   const recs=keys.map(k=>{const [pt,per]=k.split("|"),rows=by[k];return {jenis:"susut",pt,tgl:lastDay(per),no:"",jt:"",kontak:"",proyek:"",ket:"Penyusutan aset tetap "+fmtMasa(per),total:sumBy(rows,r=>r.jml),bukti:"",data:{periode:per,rows}}});
   try{for(let i=0;i<recs.length;i+=200){const r=await call("saveMany",{kind:"dok",recs:recs.slice(i,i+200)});D.dok=D.dok.concat(r.recs);D.ver=r.ver}saveLocal();prep();render();toast("Penyusutan tercatat")}catch(x){toast(x.message)}
+}
+
+/* ---------- Tutup Buku ---------- */
+const tutupOf=pt=>((D.settings.tutup||{})[pt]||{});
+const lockS=pt=>tutupOf(pt).s||"";
+const isLocked=(pt,tgl)=>{const s=lockS(pt);return !!s&&!!tgl&&String(tgl).slice(0,7)<=s};
+let tbP="",tbM="",tbDraft=null,tbKey="";
+const CUR_M=()=>TODAY.slice(0,7);
+const locD=iso=>{const d=new Date(iso);return isNaN(d)?String(iso||"").slice(0,10):d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+function tbDefM(pt){const s=lockS(pt);if(!s)return addM(CUR_M(),-1);const n=addM(s,1);return n>CUR_M()?s:n}
+const TB_MAN=[["bukti","Bukti transaksi lengkap & diarsipkan","Nota, invoice, bukti transfer bulan ini sudah dilampirkan atau disimpan."],["piut","Piutang & utang sudah dicocokkan","Saldo per klien / vendor sudah dicek, invoice yang lewat jatuh tempo sudah ditagih."],["kasbon","Kasbon & uang muka karyawan sudah dicek","Sisa kasbon sesuai catatan, yang sudah lunas sudah dipotong / dikembalikan."],["faktur","Faktur pajak sudah dicocokkan","PPN keluaran & masukan bulan ini sama dengan e-Faktur / Coretax.","pkp"]];
+function tbSaldo(P,m){const to=lastDay(m),g=agg("",to,P);return D.rek.filter(r=>r.pt===P).map(r=>{const x=g[r.akun]||{d:0,k:0};return {r,v:Math.round(x.d-x.k)}}).filter(x=>x.r.aktif!=="tidak"||x.v)}
+function tbChecks(P,m){
+  const dr=tbDraft||{rek:{},c:{}},out=[],to=lastDay(m);
+  const S=tbSaldo(P,m);
+  out.push({k:"bank",t:"Saldo bank & kas cocok dengan rekening koran",ok:S.length?S.every(x=>x.r.id in dr.rek&&Math.round(x.v-dr.rek[x.r.id])===0):null,
+    s:S.length?(S.every(x=>x.r.id in dr.rek)?(S.every(x=>Math.round(x.v-dr.rek[x.r.id])===0)?"Semua rekening cocok.":"Ada selisih, cek transaksi yang belum dicatat."):"Isi saldo akhir dari rekening koran / buku kas di tabel bawah."):"Belum ada rekening untuk PT ini.",bank:S});
+  const asets=DOCS.some(o=>o.jenis==="aset"&&o.pt===P),due=asetDue(P,m);
+  out.push({k:"susut",t:"Penyusutan aset tetap sudah dicatat",ok:asets?!due.length:null,s:!asets?"Belum ada aset tetap.":due.length?due.length+" penyusutan belum dicatat s.d. "+fmtMasa(m)+".":"Sudah tercatat s.d. "+fmtMasa(m)+".",btn:due.length?`<button class="btn sm w-only" type="button" data-act="tbsusut">Catat sekarang</button>`:""});
+  const kar=karAktif(P).length,gj=DOCS.find(o=>o.jenis==="gaji"&&o.pt===P&&o.d.periode===m);
+  out.push({k:"gaji",t:"Gaji bulan ini sudah diproses",ok:kar||gj?!!gj:null,s:gj?"Diproses "+fmtD(gj.tgl)+" · "+rp(gj.total):kar?kar+" karyawan aktif, gaji "+fmtMasa(m)+" belum diproses.":"Tidak ada karyawan aktif.",btn:!gj&&kar?`<button class="btn sm w-only" type="button" data-act="tbgaji">Proses gaji</button>`:"",doc:gj&&gj.id});
+  const n=neraca(to,P),bad=DOCS.filter(o=>o.pt===P&&o.tgl.slice(0,7)===m&&(Math.round(sumBy(o.lines,l=>l.d)-sumBy(o.lines,l=>l.k))||o.lines.some(l=>!AK[l.akun])));
+  out.push({k:"imbang",t:"Jurnal & neraca seimbang",ok:!n.selisih&&!bad.length,wajib:1,s:n.selisih?"Neraca selisih "+fN(n.selisih)+".":bad.length?bad.length+" transaksi jurnalnya tidak seimbang / akunnya hilang.":"Aset = kewajiban + ekuitas per "+fmtD(to)+".",bad});
+  const lain=LINES.filter(l=>l.pt===P&&l.tgl.slice(0,7)===m&&(l.akun===A.BEBAN||l.akun===A.PEND));
+  out.push({k:"lain",t:"Tidak ada yang nyangkut di akun \"lain-lain\"",ok:!lain.length,s:lain.length?lain.length+" baris masih di "+[...new Set(lain.map(l=>akNm(l.akun)))].join(" / ")+" ("+rp(sumBy(lain,l=>l.d+l.k))+"). Pastikan memang tidak ada akun yang lebih pas.":"Semua transaksi sudah masuk akun yang spesifik."});
+  const pj=pjItems(m,P),pd=pj.filter(x=>x.done).length;
+  out.push({k:"pajak",t:"Pajak masa "+fmtMasa(m),ok:null,s:pj.length?pd+" dari "+pj.length+" sudah beres · jatuh tempo "+BLN_L[+addM(m,1).slice(5)-1]+". Tidak menghalangi tutup buku.":"Tidak ada kewajiban pajak yang diatur untuk masa ini.",go:pj.length?"pajak":""});
+  return out;
+}
+function rTutup(){
+  const list=ptNames();let h="";
+  if(!list.length){$("#v-tutup").innerHTML=emptyC("Belum ada PT");return}
+  if(!PT&&list.length>1){
+    h+=`<div class="bar"><span class="hint">Tutup buku dilakukan per PT. Bulan yang sudah ditutup terkunci: transaksinya tidak bisa ditambah, diubah, atau dihapus.</span></div><div class="tw"><table class="t"><thead><tr><th>PT</th><th>Terkunci s.d.</th><th>Berikutnya</th><th>Checklist</th></tr></thead><tbody>${list.map(p=>{const s=lockS(p),m=tbDefM(p),done=m<=s;const ck=done?[]:tbChecksFor(p,m),ok=ck.filter(c=>c.ok===true).length,all=ck.filter(c=>c.ok!==null).length;
+      return `<tr class="click" data-pt="${esc(p)}"><td><b>${esc(p)}</b></td><td>${s?`<span class="tg ok">🔒 ${fmtMasa(s)}</span>`:`<span class="tg">Belum pernah</span>`}</td><td>${done?"–":fmtMasa(m)}</td><td>${done?`<span class="hint">Semua bulan sudah ditutup</span>`:`<span class="tg ${ok===all?"ok":"warn"}">${ok} / ${all} beres</span>`}</td></tr>`}).join("")}</tbody></table></div>`;
+    $("#v-tutup").innerHTML=h;return}
+  const P=PT||list[0];if(tbP!==P){tbP=P;tbM=tbDefM(P)}if(!tbM)tbM=tbDefM(P);const m=tbM,s=lockS(P),locked=m<=s&&!!s,key=P+"|"+m;
+  if(tbKey!==key){tbKey=key;const c=(D.settings.cek||{})[key]||{};tbDraft={rek:Object.assign({},c.rek||{}),c:Object.assign({},c.c||{}),by:c.by,at:c.at}}
+  const ck=tbChecks(P,m),f=lr(m+"-01",lastDay(m),P),bank=ck[0].bank,pkp=isPkp(P,lastDay(m));
+  const man=TB_MAN.filter(x=>x[3]!=="pkp"||pkp);
+  const okN=ck.filter(c=>c.ok===true).length+man.filter(x=>tbDraft.c[x[0]]).length,allN=ck.filter(c=>c.ok!==null).length+man.length,R2=22,C=2*Math.PI*R2,pr=allN?okN/allN:0;
+  h+=`<div class="card pjprog"><svg class="ring" viewBox="0 0 52 52"><circle cx="26" cy="26" r="${R2}" fill="none" stroke="var(--panel-2)" stroke-width="6"/><circle cx="26" cy="26" r="${R2}" fill="none" stroke="var(--${locked?"ok":"acc"})" stroke-width="6" stroke-linecap="round" stroke-dasharray="${C*(locked?1:pr)} ${C}" transform="rotate(-90 26 26)"/></svg><div style="flex:1;min-width:180px"><b>${esc(P)} · ${BLN_L[+m.slice(5)-1]} ${m.slice(0,4)}</b><div class="hint">${locked?"Sudah tutup buku":okN+" dari "+allN+" beres"} · ${s?"terkunci s.d. "+fmtMasa(s):"belum pernah tutup buku"}</div></div><div class="seg"><button type="button" data-act="tbprev" aria-label="Bulan sebelumnya">‹</button><button type="button" data-act="tbnow">Berikutnya</button><button type="button" data-act="tbnext" aria-label="Bulan berikutnya"${m>=CUR_M()?" disabled":""}>›</button></div></div>`;
+  const log=(tutupOf(P).log||[]);
+  if(locked){const lg=log.find(x=>x.a==="tutup"&&x.m>=m);h+=`<div class="lockb">🔒 ${fmtMasa(m)} sudah tutup buku${lg?` oleh ${esc(lg.by)} · ${fmtD(locD(lg.at))}`:""}. Transaksi di bulan ini tidak bisa ditambah, diubah, atau dihapus.${canW()?` <button class="btn sm" type="button" data-act="tbopen" style="margin-left:6px">Buka kembali</button>`:""}</div>`}
+  h+=`<div class="tbs"><div><small>Pendapatan</small><b>${rpS(f.t.pendapatan+f.t.lain_p)}</b></div><div><small>Beban</small><b>${rpS(f.t.bebanAll)}</b></div><div><small>Laba bersih</small><b style="color:var(--${f.t.laba<0?"bad":"ok"}-ink)">${rpS(f.t.laba)}</b></div><div><small>Kas & bank akhir bulan</small><b>${rpS(sumBy(bank,x=>x.v))}</b></div></div>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Cek otomatis</h3><small>dihitung dari pembukuan</small></div><div class="tckl">${ck.map(c=>`<div class="tck"><span class="ic ${c.ok===true?"ok":c.ok===false?(c.wajib?"bad":"no"):""}">${c.ok===true?"✓":c.ok===false?"!":"i"}</span><span class="bd"><b>${esc(c.t)}${c.wajib?` <span class="tg ${c.ok?"ok":"bad"}">wajib</span>`:""}</b><small>${esc(c.s)}</small>${c.bad&&c.bad.length?`<small>${c.bad.slice(0,5).map(o=>`<a href="#" data-doc="${o.id}">${esc(fmtDs(o.tgl)+" "+(o.no||o.ket||DOKN[o.jenis]))}</a>`).join(" · ")}</small>`:""}${c.doc?`<small><a href="#" data-doc="${c.doc}">Lihat jurnal gaji</a></small>`:""}${c.go?`<small><a href="#" data-view="${c.go}">Buka menu Pajak</a></small>`:""}</span>${!locked&&c.btn?`<span class="ac">${c.btn}</span>`:""}</div>`).join("")}</div></div>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Rekonsiliasi bank & kas</h3><small>saldo per ${fmtD(lastDay(m))}</small></div>${bank.length?`<div class="tbrk">${bank.map(x=>{const has=x.r.id in tbDraft.rek,v=tbDraft.rek[x.r.id];return `<div class="r"><span class="n"><b>${esc(x.r.nama)}</b><small>${esc(x.r.tipe==="kas"?"Kas tunai":(x.r.bank||"")+" "+(x.r.norek||""))}</small></span><span class="b"><small>Saldo di pembukuan</small>${fA(x.v)}</span><label class="k"><small>Saldo rekening koran</small><input class="money" data-tbrek="${esc(x.r.id)}" value="${has?(v===0?"0":mf(v)):""}" placeholder="isi saldo" inputmode="numeric"${locked||!canW()?" disabled":""}></label><span class="s"><small>Selisih</small><span data-tbsel="${esc(x.r.id)}">${tbSel(x.v,has?v:undefined)}</span></span></div>`}).join("")}</div><p class="hint" style="margin:8px 2px 0">Kalau ada selisih: cari transaksi di rekening koran yang belum dicatat (biaya admin, bunga, transfer masuk), atau import rekening koran lewat menu Import.</p>`:`<p class="hint">Belum ada rekening untuk PT ini. Tambah di Data Induk → Bank & Kas.</p>`}</div>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Cek manual</h3><small>dicentang tim finance</small></div><div class="tckl">${man.map(x=>`<label class="tck"><input type="checkbox" data-tbc="${x[0]}"${tbDraft.c[x[0]]?" checked":""}${locked||!canW()?" disabled":""}><span class="bd"><b>${esc(x[1])}</b><small>${esc(x[2])}</small></span></label>`).join("")}</div>${tbDraft.by?`<p class="hint" style="margin:8px 2px 0">Terakhir disimpan ${esc(tbDraft.by)} · ${fmtD(locD(String(tbDraft.at)))}</p>`:""}</div>`;
+  if(!locked&&canW())h+=`<div class="bar" style="margin-top:12px;justify-content:flex-end"><button class="btn" type="button" data-act="tbsave">Simpan checklist</button><button class="btn primary" type="button" data-act="tbclose"${m>CUR_M()?" disabled":""}>🔒 Tutup buku ${fmtMasa(m)}</button></div>`;
+  if(log.length)h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Riwayat tutup buku ${esc(P)}</h3></div><div class="tckl">${log.slice(0,15).map(x=>`<div class="tck"><span class="ic ${x.a==="tutup"?"ok":"no"}">${x.a==="tutup"?"🔒":"↺"}</span><span class="bd"><b>${x.a==="tutup"?"Tutup buku s.d. "+fmtMasa(x.m):"Dibuka kembali mulai "+fmtMasa(x.m)}</b><small>${esc(x.by)} · ${fmtD(locD(String(x.at)))}${x.ket?" · "+esc(x.ket):""}</small></span></div>`).join("")}</div></div>`;
+  $("#v-tutup").innerHTML=h;
+}
+function tbChecksFor(P,m){const sv=tbDraft;const c=(D.settings.cek||{})[P+"|"+m]||{};tbDraft={rek:c.rek||{},c:c.c||{}};const r=tbChecks(P,m);tbDraft=sv;return r}
+function tbSel(buku,koran){if(koran===undefined)return `<span class="hint">–</span>`;const d=Math.round(buku-koran);return d?`<b style="color:var(--bad-ink)">${fA(d)}</b>`:`<span class="tg ok">✓ cocok</span>`}
+document.addEventListener("input",e=>{const t=e.target;if(!t.dataset||!tbDraft)return;
+  if(t.dataset.tbrek!==undefined){const id=t.dataset.tbrek;if(t.value.trim()==="")delete tbDraft.rek[id];else tbDraft.rek[id]=mv(t.value);const x=tbSaldo(tbP,tbM).find(y=>y.r.id===id),c=$(`[data-tbsel="${id}"]`);if(x&&c)c.innerHTML=tbSel(x.v,tbDraft.rek[id])}
+  if(t.dataset.tbc!==undefined){if(t.checked)tbDraft.c[t.dataset.tbc]=true;else delete tbDraft.c[t.dataset.tbc]}});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.tbc!==undefined){t.dispatchEvent(new Event("input",{bubbles:true}));rTutup()}});
+async function tbSaveCek(quiet){const r=await call("cek",{pt:tbP,m:tbM,data:{rek:tbDraft.rek,c:tbDraft.c}});D.settings.cek=D.settings.cek||{};D.settings.cek[r.key]=r.cek;D.ver=r.ver;saveLocal();tbKey="";if(!quiet)toast("Checklist tersimpan")}
+async function tbAct(act,btn){
+  const P=tbP,m=tbM;
+  if(act==="tbprev"){tbM=addM(tbM,-1);rTutup();return}
+  if(act==="tbnext"){if(tbM<CUR_M()){tbM=addM(tbM,1);rTutup()}return}
+  if(act==="tbnow"){tbM=tbDefM(P);rTutup();return}
+  if(act==="tbsusut"){await catatSusut(P,m);return}
+  if(act==="tbgaji"){openDoc("gaji",null,{pt:P,tgl:lastDay(m)>TODAY?TODAY:lastDay(m),ket:"Gaji "+fmtMasa(m),d:{periode:m,rows:gajiRows(P)}});return}
+  if(btn)btn.disabled=true;
+  try{
+    if(act==="tbsave"){await tbSaveCek();rTutup();return}
+    if(act==="tbclose"){
+      const ck=tbChecks(P,m),man=TB_MAN.filter(x=>x[3]!=="pkp"||isPkp(P,lastDay(m)));
+      const w=ck.find(c=>c.wajib&&!c.ok);if(w){toast("Belum bisa ditutup: "+w.s);return}
+      const pend=ck.filter(c=>c.ok===false).map(c=>"• "+c.t).concat(man.filter(x=>!tbDraft.c[x[0]]).map(x=>"• "+x[1]));
+      const s=lockS(P),from=s?addM(s,1):"",extra=!s?"\n\nSemua transaksi "+P+" sampai "+fmtMasa(m)+" ikut terkunci.":from<m?"\n\nBulan "+fmtMasa(from)+" – "+fmtMasa(addM(m,-1))+" yang belum ditutup ikut terkunci.":"";
+      if(!confirm((pend.length?"Masih ada yang belum beres:\n"+pend.join("\n")+"\n\nTetap tutup buku ":"Tutup buku ")+P+" "+fmtMasa(m)+"?"+extra+"\n\nSetelah ditutup, transaksi di periode ini tidak bisa diubah (bisa dibuka kembali kalau perlu)."))return;
+      await tbSaveCek(true);
+      const r=await call("tutup",{pt:P,m});D.settings.tutup=D.settings.tutup||{};D.settings.tutup[r.pt]=r.tutup;D.ver=r.ver;saveLocal();
+      toast("Tutup buku "+fmtMasa(m)+" selesai");tbM=tbDefM(P);render();return}
+    if(act==="tbopen"){
+      const s=lockS(P),ket=prompt("Buka kembali "+P+" mulai "+fmtMasa(m)+(m<s?" (sampai "+fmtMasa(s)+" ikut terbuka)":"")+"?\n\nTulis alasannya:");
+      if(ket===null)return;if(!ket.trim()){toast("Alasan wajib diisi");return}
+      const r=await call("tutup",{pt:P,m,buka:true,ket:ket.trim()});D.settings.tutup[r.pt]=r.tutup;D.ver=r.ver;saveLocal();toast(fmtMasa(m)+" dibuka kembali");render();return}
+  }catch(x){toast(x.message)}finally{if(btn)btn.disabled=false}
 }
 
 /* ---------- Data Induk ---------- */
@@ -1404,8 +1511,9 @@ $("#v-imp").addEventListener("change",async e=>{
     const sm=$('[data-act="imsave"]'),n=IMP.rows.filter(x=>!x.dup&&x.pick).length;if(sm){sm.textContent="Simpan "+n+" baris ke pembukuan";sm.disabled=!n}}
 });
 async function impSave(){
-  const I=IMP,rek=RK[I.rek],ready=I.rows.filter(r=>!r.dup&&r.pick);if(!ready.length)return;
-  if(!confirm(`Catat ${ready.length} baris ke pembukuan ${rek.nama}?`))return;
+  const I=IMP,rek=RK[I.rek],all=I.rows.filter(r=>!r.dup&&r.pick),ready=all.filter(r=>!isLocked(rek.pt,r.tgl));
+  if(!ready.length){if(all.length)toast("Semua baris ada di periode yang sudah tutup buku.");return}
+  if(!confirm(`Catat ${ready.length} baris ke pembukuan ${rek.nama}?`+(all.length>ready.length?`\n\n${all.length-ready.length} baris di periode yang sudah tutup buku (s.d. ${fmtMasa(lockS(rek.pt))}) dilewati.`:"")))return;
   const recs=ready.map(r=>{const base={jenis:"kas",pt:rek.pt,tgl:r.tgl,ket:r.ket.slice(0,200),total:Math.abs(r.amt),kontak:"",proyek:"",no:"",jt:"",bukti:""};
     if(r.pick.t==="akun")return Object.assign(base,{data:{rek:I.rek,arah:r.amt>0?"masuk":"keluar",lines:[{akun:r.pick.akun,ket:"",jml:Math.abs(r.amt)}],imp:r.key}});
     const o=DOCMAP[r.pick.doc];return Object.assign(base,{jenis:r.pick.t,kontak:o.kontak,data:{rek:I.rek,alok:[{doc:o.id,jml:Math.abs(r.amt)}],dp:0,biaya:0,imp:r.key}})});
@@ -1564,6 +1672,7 @@ document.addEventListener("click",async e=>{
   else if(act==="impnext"){impPg++;rImp()}
   else if(act==="imsave")impSave();
   else if(act==="susut")catatSusut();
+  else if(act.startsWith("tb"))tbAct(act,a);
   else if(act==="imrule")openRule();
   else if(act==="impkt")impKontak(a.dataset.tipe);
   else if(act==="setreset"){setDraft=null;rInduk()}

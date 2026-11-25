@@ -88,6 +88,8 @@ const DEF_SET = {
   // tarif BPJS (persen) & batas upah; bisa diubah di Data Induk
   payroll: { kesP: 4, kesK: 1, kesMax: 12000000, jhtP: 3.7, jhtK: 2, jpP: 2, jpK: 1, jpMax: 10547400, jkk: 0.24, jkm: 0.3 },
   kat: [],      // kategori versi lama (hanya untuk pemindahan data)
+  tutup: {},    // tutup buku per PT: { Vorent: { s: 'yyyy-MM' (terkunci s.d. bulan ini), log: [...] } }
+  cek: {},      // checklist tutup buku: { 'PT|yyyy-MM': { rek: { idRekening: saldoRekeningKoran }, c: { kunci: true }, by, at } }
   mulai: ''     // masa pajak pertama yang dicatat (yyyy-MM)
 };
 
@@ -114,6 +116,8 @@ function route_(q) {
     case 'del': return del(q.token, q.kind, q.id);
     case 'saveSettings': return saveSettings(q.token, q.settings);
     case 'upload': return upload(q.token, q.name, q.mime, q.data);
+    case 'tutup': return tutup(q.token, q.pt, q.m, q.buka, q.ket);
+    case 'cek': return saveCek(q.token, q.pt, q.m, q.data);
   }
   throw new Error('UNKNOWN');
 }
@@ -309,12 +313,24 @@ function writer_(u, pt) {
   if (pt && !canPt_(u, pt)) throw new Error('Tidak punya akses ke PT ' + pt);
 }
 
+// periode yang sudah tutup buku tidak bisa diubah
+const BLN_ = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const masaTxt_ = m => BLN_[Number(String(m).slice(5, 7)) - 1] + ' ' + String(m).slice(0, 4);
+function kunci_(set, pt, tgl) {
+  const t = (set.tutup || {})[pt], s = t && t.s;
+  if (s && tgl && String(tgl).slice(0, 7) <= s) throw new Error('Periode ' + masaTxt_(String(tgl).slice(0, 7)) + ' PT ' + pt + ' sudah tutup buku (terkunci s.d. ' + masaTxt_(s) + '). Buka dulu di menu Tutup Buku kalau memang perlu diubah.');
+}
+
 /* ---------------- API ---------------- */
 function getAll(token) {
   const u = who_(token), set = readSet_();
   const f = o => canPt_(u, o.pt);
   const strip = o => { delete o._row; return o; };
   if (u.finPt) set.pts = set.pts.filter(p => norm_(p.n) === norm_(u.finPt));
+  if (u.finPt) {
+    const own = k => norm_(String(k).split('|')[0]) === norm_(u.finPt), pick = o => Object.keys(o || {}).filter(own).reduce((r, k) => { r[k] = o[k]; return r; }, {});
+    set.tutup = pick(set.tutup); set.cek = pick(set.cek);
+  }
   return {
     user: u, settings: set,
     akun: read_('akun').map(strip),
@@ -389,6 +405,8 @@ function save(token, kind, rec) {
       const a = read_('akun').find(x => x.kode === old.akun); if (a) write_('akun', { nama: o.nama }, a._row);
     }
     if (kind === 'dok') {
+      kunci_(set, o.pt, o.tgl);
+      if (old) kunci_(set, old.pt, old.tgl);
       if (o.jenis === 'jual' && !o.no) o.no = old && old.no ? old.no : nextNo_(all, o, set);
       if (o.jenis === 'jual' && o.no && all.some(x => x.jenis === 'jual' && x.no === o.no && x.id !== o.id && x.pt === o.pt)) throw new Error('Nomor invoice ' + o.no + ' sudah dipakai');
       if (!old) o.dibuat = now;
@@ -407,7 +425,7 @@ function saveMany(token, kind, recs) {
   if (['dok', 'kontak', 'jasa'].indexOf(kind) < 0 || !Array.isArray(recs)) throw new Error('Data tidak valid');
   if (recs.length > 500) throw new Error('Maksimal 500 baris per kirim');
   const set = readSet_(), now = new Date().toISOString();
-  const list = recs.map(r => { const o = clean_(kind, r || {}, set); writer_(u, o.pt); if (!o.id) o.id = uid_(); if (kind === 'dok') { o.dibuat = now; o.diubah = now; o.oleh = u.name; } return o; });
+  const list = recs.map(r => { const o = clean_(kind, r || {}, set); writer_(u, o.pt); if (kind === 'dok') kunci_(set, o.pt, o.tgl); if (!o.id) o.id = uid_(); if (kind === 'dok') { o.dibuat = now; o.diubah = now; o.oleh = u.name; } return o; });
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
   try {
     if (kind === 'dok') {
@@ -438,6 +456,7 @@ function del(token, kind, id) {
     if (kind === 'rek' && usedIn(old.id)) throw new Error('Rekening sudah dipakai transaksi. Nonaktifkan saja.');
     if (kind === 'kontak' && usedIn(old.id)) throw new Error('Kontak sudah dipakai transaksi. Nonaktifkan saja.');
     if (kind === 'dok') {
+      kunci_(readSet_(), old.pt, old.tgl);
       const ref = read_('dok').find(d => d.id !== id && (d.jenis === 'terima' || d.jenis === 'bayar') && String(d.data).indexOf('"' + id + '"') >= 0);
       if (ref) throw new Error('Sudah ada pembayaran untuk dokumen ini (' + ref.tgl + '). Hapus pembayarannya dulu.');
     }
@@ -467,11 +486,59 @@ function saveSettings(token, s) {
       susut: str(s.kebijakan.susut, 40) || 'garis lurus', ppn: Number(s.kebijakan.ppn) || 12, dpp: s.kebijakan.dpp === '1' ? '1' : '11/12' } : cur.kebijakan,
     payroll: s.payroll && typeof s.payroll === 'object' ? Object.keys(DEF_SET.payroll).reduce((o, k) => { o[k] = Math.max(0, Number(s.payroll[k]) || 0); return o; }, {}) : cur.payroll,
     aturan: Array.isArray(s.aturan) ? s.aturan.filter(a => a && str(a.kata, 60) && a.akun).map(a => ({ kata: str(a.kata, 60), akun: str(a.akun, 20) })).slice(0, 300) : cur.aturan,
-    kat: cur.kat,
+    kat: cur.kat, tutup: cur.tutup, cek: cur.cek,
     mulai: /^\d{4}-\d{2}$/.test(String(s.mulai)) ? s.mulai : cur.mulai
   };
   writeSet_(ss_().getSheetByName(SH.set), out);
   return { settings: out, ver: bump_() };
+}
+
+// Tutup buku s.d. bulan m (semua bulan sebelumnya ikut terkunci), atau buka kembali mulai bulan m
+function tutup(token, pt, m, buka, ket) {
+  const u = who_(token);
+  writer_(u, pt);
+  if (!/^\d{4}-\d{2}$/.test(String(m))) throw new Error('Bulan tidak valid');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const set = readSet_();
+    if (!set.pts.some(p => p.n === pt)) throw new Error('PT tidak dikenal: ' + pt);
+    const T = set.tutup || {}, cur = T[pt] || { s: '', log: [] }, now = new Date().toISOString();
+    ket = String(ket || '').trim().slice(0, 300);
+    if (buka) {
+      if (!cur.s || m > cur.s) throw new Error(masaTxt_(m) + ' belum ditutup');
+      if (!ket) throw new Error('Isi alasan buka kembali');
+      const [y, mm] = m.split('-').map(Number), prev = mm === 1 ? (y - 1) + '-12' : y + '-' + ('0' + (mm - 1)).slice(-2);
+      cur.s = prev < '2000-01' ? '' : prev;
+    } else {
+      if (m > Utilities.formatDate(new Date(), ss_().getSpreadsheetTimeZone(), 'yyyy-MM')) throw new Error('Bulan yang belum berjalan tidak bisa ditutup');
+      if (cur.s && m <= cur.s) throw new Error(masaTxt_(m) + ' sudah ditutup');
+      cur.s = m;
+    }
+    cur.log = [{ a: buka ? 'buka' : 'tutup', m: m, by: u.name, at: now, ket: ket }].concat(cur.log || []).slice(0, 120);
+    T[pt] = cur; set.tutup = T;
+    writeSet_(ss_().getSheetByName(SH.set), set);
+    return { pt: pt, tutup: cur, ver: bump_() };
+  } finally { lock.releaseLock(); }
+}
+
+// simpan checklist & saldo rekening koran untuk tutup buku
+function saveCek(token, pt, m, data) {
+  const u = who_(token);
+  writer_(u, pt);
+  if (!/^\d{4}-\d{2}$/.test(String(m))) throw new Error('Bulan tidak valid');
+  data = data || {};
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const set = readSet_();
+    if (!set.pts.some(p => p.n === pt)) throw new Error('PT tidak dikenal: ' + pt);
+    const C = set.cek || {}, rek = {}, c = {};
+    Object.keys(data.rek || {}).slice(0, 50).forEach(k => { const v = data.rek[k]; if (v !== '' && v != null && isFinite(Number(v))) rek[String(k).slice(0, 40)] = Math.round(Number(v) * 100) / 100; });
+    Object.keys(data.c || {}).slice(0, 30).forEach(k => { if (data.c[k]) c[String(k).slice(0, 30)] = true; });
+    C[pt + '|' + m] = { rek: rek, c: c, by: u.name, at: new Date().toISOString() };
+    set.cek = C;
+    writeSet_(ss_().getSheetByName(SH.set), set);
+    return { key: pt + '|' + m, cek: C[pt + '|' + m], ver: bump_() };
+  } finally { lock.releaseLock(); }
 }
 
 // Foto nota / bukti transfer → Google Drive (folder "Finance - Bukti Transaksi"), link bisa dibuka siapa pun yang punya link
