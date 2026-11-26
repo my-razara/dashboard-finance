@@ -13,7 +13,7 @@
 // URL Web App aplikasi Prospek (yang berakhiran /exec) — hanya untuk cek login & akses
 const PROSPEK_API = 'https://script.google.com/macros/s/AKfycby80Xr7c6ia8q3aZcwWaJ0k2AmQ91hZjnDsQb4ICSZGAe3qvMR8HwylyE8oC1xnFInlfQ/exec';
 
-const SH = { akun: 'Akun', kontak: 'Kontak', jasa: 'Jasa', rek: 'Rekening', dok: 'Dokumen', pajak: 'Pajak', set: 'Pengaturan', trx: 'Transaksi' };
+const SH = { akun: 'Akun', kontak: 'Kontak', jasa: 'Jasa', rek: 'Rekening', dok: 'Dokumen', pajak: 'Pajak', set: 'Pengaturan', trx: 'Transaksi', cat: 'Catatan' };
 const F = {
   akun: [['kode', 'Kode'], ['nama', 'Nama Akun'], ['jenis', 'Jenis'], ['normal', 'Saldo Normal (D/K)'], ['grup', 'Kelompok'], ['sys', 'Akun Sistem'], ['aktif', 'Aktif']],
   kontak: [['id', 'ID'], ['tipe', 'Tipe'], ['nama', 'Nama'], ['pic', 'Kontak / Jabatan'], ['wa', 'WhatsApp'], ['email', 'Email'], ['npwp', 'NPWP'], ['alamat', 'Alamat'],
@@ -25,14 +25,16 @@ const F = {
     ['ket', 'Keterangan'], ['total', 'Total'], ['data', 'Rincian (JSON)'], ['bukti', 'Bukti (link)'], ['oleh', 'Oleh'], ['dibuat', 'Dibuat'], ['diubah', 'Diubah']],
   pajak: [['id', 'ID'], ['pt', 'PT'], ['masa', 'Masa (yyyy-MM)'], ['jenis', 'Jenis Pajak'], ['nominal', 'Nominal'], ['status', 'Status (belum / setor / beres / nihil)'], ['ntpn', 'NTPN / No Bukti'],
     ['tglSetor', 'Tanggal Setor'], ['tglLapor', 'Tanggal Lapor'], ['catatan', 'Catatan'], ['diubah', 'Diubah'], ['oleh', 'Oleh']],
+  // catatan per PT: checklist tutup buku, CALK, perhitungan PPh Badan (disimpan per baris supaya tidak melebihi batas 1 sel)
+  cat: [['kunci', 'Kunci'], ['data', 'Isi (JSON)'], ['oleh', 'Oleh'], ['diubah', 'Diubah']],
   // versi lama (dipindah otomatis ke Dokumen), tidak dibuat untuk pemasangan baru
   trx: [['id', 'ID'], ['tgl', 'Tanggal'], ['pt', 'PT'], ['jenis', 'Jenis (masuk / keluar / pindah)'], ['kat', 'Kategori'], ['rek', 'Rekening'], ['rekTo', 'Rekening Tujuan'],
     ['nominal', 'Nominal'], ['ket', 'Keterangan'], ['pihak', 'Klien / Vendor'], ['ref', 'Ref Prospek'], ['bukti', 'Bukti (link)'], ['dibuat', 'Dibuat'], ['oleh', 'Oleh'], ['diubah', 'Diubah']]
 };
 const LEGACY = { trx: 1 };
-const KEY = { akun: 'kode' };
+const KEY = { akun: 'kode', cat: 'kunci' };
 const NUM = { nominal: 1, saldoAwal: 1, harga: 1, total: 1, termin: 1 };
-const TXT = { kode: 1, tgl: 1, jt: 1, tglAwal: 1, masa: 1, tglSetor: 1, tglLapor: 1, norek: 1, ntpn: 1, npwp: 1, wa: 1, no: 1, dibuat: 1, diubah: 1, data: 1 };
+const TXT = { kunci: 1, kode: 1, tgl: 1, jt: 1, tglAwal: 1, masa: 1, tglSetor: 1, tglLapor: 1, norek: 1, ntpn: 1, npwp: 1, wa: 1, no: 1, dibuat: 1, diubah: 1, data: 1 };
 const DOK_JENIS = ['jual', 'terima', 'beli', 'bayar', 'kas', 'pindah', 'jurnal', 'gaji', 'aset', 'susut'];
 const AKUN_JENIS = ['aset', 'kewajiban', 'ekuitas', 'pendapatan', 'hpp', 'beban', 'lain_p', 'lain_b', 'pajak'];
 
@@ -118,6 +120,7 @@ function route_(q) {
     case 'upload': return upload(q.token, q.name, q.mime, q.data);
     case 'tutup': return tutup(q.token, q.pt, q.m, q.buka, q.ket);
     case 'cek': return saveCek(q.token, q.pt, q.m, q.data);
+    case 'note': return saveNote(q.token, q.pt, q.key, q.data);
   }
   throw new Error('UNKNOWN');
 }
@@ -275,6 +278,7 @@ function readSet_() {
 
 function writeSet_(sh, s) {
   const keys = Object.keys(DEF_SET);
+  keys.forEach(k => { if (JSON.stringify(s[k] == null ? DEF_SET[k] : s[k]).length > 49000) throw new Error('Pengaturan "' + k + '" terlalu besar untuk disimpan'); });
   sh.clearContents();
   sh.getRange(1, 1, keys.length + 1, 2).setValues([['Kunci', 'Nilai (jangan diubah manual kalau tidak paham)']].concat(keys.map(k => [k, JSON.stringify(s[k] == null ? DEF_SET[k] : s[k])])));
   sh.getRange(1, 1, 1, 2).setFontWeight('bold');
@@ -339,6 +343,7 @@ function getAll(token) {
     rek: read_('rek').filter(f).map(strip),
     dok: read_('dok').filter(f).map(strip),
     pajak: read_('pajak').filter(f).map(strip),
+    cat: read_('cat').filter(o => canPt_(u, String(o.kunci).split('|')[1])).map(strip),
     ver: ver_()
   };
 }
@@ -384,7 +389,7 @@ function nextNo_(all, o, set) {
 
 function save(token, kind, rec) {
   const u = who_(token);
-  if (!F[kind] || LEGACY[kind]) throw new Error('Data tidak valid');
+  if (!F[kind] || LEGACY[kind] || kind === 'cat') throw new Error('Data tidak valid');
   const set = readSet_(), o = clean_(kind, rec || {}, set), K = keyOf_(kind);
   writer_(u, o.pt);
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
@@ -440,7 +445,7 @@ function saveMany(token, kind, recs) {
 
 function del(token, kind, id) {
   const u = who_(token);
-  if (!F[kind] || LEGACY[kind]) throw new Error('Data tidak valid');
+  if (!F[kind] || LEGACY[kind] || kind === 'cat') throw new Error('Data tidak valid');
   const K = keyOf_(kind);
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
@@ -514,7 +519,7 @@ function tutup(token, pt, m, buka, ket) {
       if (cur.s && m <= cur.s) throw new Error(masaTxt_(m) + ' sudah ditutup');
       cur.s = m;
     }
-    cur.log = [{ a: buka ? 'buka' : 'tutup', m: m, by: u.name, at: now, ket: ket }].concat(cur.log || []).slice(0, 120);
+    cur.log = [{ a: buka ? 'buka' : 'tutup', m: m, by: u.name, at: now, ket: ket }].concat(cur.log || []).slice(0, 40);
     T[pt] = cur; set.tutup = T;
     writeSet_(ss_().getSheetByName(SH.set), set);
     return { pt: pt, tutup: cur, ver: bump_() };
@@ -523,21 +528,34 @@ function tutup(token, pt, m, buka, ket) {
 
 // simpan checklist & saldo rekening koran untuk tutup buku
 function saveCek(token, pt, m, data) {
-  const u = who_(token);
-  writer_(u, pt);
   if (!/^\d{4}-\d{2}$/.test(String(m))) throw new Error('Bulan tidak valid');
   data = data || {};
+  const rek = {}, c = {};
+  Object.keys(data.rek || {}).slice(0, 50).forEach(k => { const v = data.rek[k]; if (v !== '' && v != null && isFinite(Number(v))) rek[String(k).slice(0, 40)] = Math.round(Number(v) * 100) / 100; });
+  Object.keys(data.c || {}).slice(0, 30).forEach(k => { if (data.c[k]) c[String(k).slice(0, 30)] = true; });
+  const r = putNote_(token, pt, 'cek|' + pt + '|' + m, { rek: rek, c: c });
+  return { key: pt + '|' + m, cek: r.data, ver: r.ver };
+}
+
+// catatan tahunan: 'thn|PT|yyyy' → { calk: {...}, fiskal: {...} }
+function saveNote(token, pt, key, data) {
+  if (!/^thn\|[^|]+\|\d{4}$/.test(String(key)) || String(key).split('|')[1] !== pt) throw new Error('Kunci catatan tidak valid');
+  const r = putNote_(token, pt, key, data && typeof data === 'object' ? data : {});
+  return { key: key, data: r.data, ver: r.ver };
+}
+
+function putNote_(token, pt, key, data) {
+  const u = who_(token);
+  writer_(u, pt);
+  const set = readSet_();
+  if (!set.pts.some(p => p.n === pt)) throw new Error('PT tidak dikenal: ' + pt);
+  const o = Object.assign({}, data, { by: u.name, at: new Date().toISOString() }), js = JSON.stringify(o);
+  if (js.length > 45000) throw new Error('Catatan terlalu panjang');
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
-    const set = readSet_();
-    if (!set.pts.some(p => p.n === pt)) throw new Error('PT tidak dikenal: ' + pt);
-    const C = set.cek || {}, rek = {}, c = {};
-    Object.keys(data.rek || {}).slice(0, 50).forEach(k => { const v = data.rek[k]; if (v !== '' && v != null && isFinite(Number(v))) rek[String(k).slice(0, 40)] = Math.round(Number(v) * 100) / 100; });
-    Object.keys(data.c || {}).slice(0, 30).forEach(k => { if (data.c[k]) c[String(k).slice(0, 30)] = true; });
-    C[pt + '|' + m] = { rek: rek, c: c, by: u.name, at: new Date().toISOString() };
-    set.cek = C;
-    writeSet_(ss_().getSheetByName(SH.set), set);
-    return { key: pt + '|' + m, cek: C[pt + '|' + m], ver: bump_() };
+    const old = read_('cat').find(x => x.kunci === key);
+    write_('cat', { kunci: key, data: js, oleh: u.name, diubah: o.at }, old ? old._row : 0);
+    return { data: o, ver: bump_() };
   } finally { lock.releaseLock(); }
 }
 

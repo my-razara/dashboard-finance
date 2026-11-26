@@ -644,7 +644,7 @@ const A={GAJI:"6-1001",BPJSB:"6-1002",UTGAJI:"2-1402",UTBPJS:"2-1403",SUSUT:"6-1
   UTPPH:{"PPh 21":"2-1302","PPh 23":"2-1303","PPh 26":"2-1303","PPh 4(2)":"2-1304"}};
 const JENIS={aset:"Aset",kewajiban:"Kewajiban",ekuitas:"Ekuitas",pendapatan:"Pendapatan",hpp:"Beban Pokok Jasa",beban:"Beban Operasional",lain_p:"Pendapatan Lain",lain_b:"Beban Lain",pajak:"Pajak Penghasilan"};
 const DOKN={gaji:"Penggajian",aset:"Perolehan aset",susut:"Penyusutan",jual:"Penjualan",terima:"Penerimaan",beli:"Pembelian / Beban",bayar:"Pembayaran",kas:"Kas masuk/keluar",pindah:"Pindah dana",jurnal:"Jurnal umum"};
-let AK={},KT={},RK={},JS={},DOCS=[],DOCMAP={},LINES=[],PAID={},POSTED={};
+let CAT={},AK={},KT={},RK={},JS={},DOCS=[],DOCMAP={},LINES=[],PAID={},POSTED={};
 const rekAk=id=>(RK[id]||{}).akun||"";
 const akNm=k=>AK[k]?AK[k].nama:"(akun "+k+")";
 const ktNm=id=>KT[id]?KT[id].nama:(id||"");
@@ -679,6 +679,8 @@ function linesOf(o){
   return L;
 }
 function prep(){
+  CAT={};(D.cat||[]).forEach(c=>{try{CAT[c.kunci]=JSON.parse(c.data)}catch(e){}});
+  D.settings.cek=Object.assign({},D.settings.cek||{});Object.keys(CAT).forEach(k=>{if(k.startsWith("cek|"))D.settings.cek[k.slice(4)]=CAT[k]});
   AK={};(D.akun||[]).forEach(a=>{a.aktif=a.aktif===""?"ya":a.aktif;AK[a.kode]=a});
   KT={};(D.kontak||[]).forEach(k=>{try{k._d=k.data?JSON.parse(k.data):{}}catch(e){k._d={}}KT[k.id]=k});
   RK={};(D.rek||[]).forEach(r=>RK[r.id]=r);
@@ -1290,7 +1292,8 @@ function tbChecks(P,m){
   return out;
 }
 function rTutup(){
-  const list=ptNames();let h="";
+  const list=ptNames();let h=tabs(tbTab,[["bulan","Tutup buku bulanan"],["tahun","Tutup tahun & laporan tahunan"]],"tbt");
+  if(tbTab==="tahun"){$("#v-tutup").innerHTML=h+rTahun();return}
   if(!list.length){$("#v-tutup").innerHTML=emptyC("Belum ada PT");return}
   if(!PT&&list.length>1){
     h+=`<div class="bar"><span class="hint">Tutup buku dilakukan per PT. Bulan yang sudah ditutup terkunci: transaksinya tidak bisa ditambah, diubah, atau dihapus.</span></div><div class="tw"><table class="t"><thead><tr><th>PT</th><th>Terkunci s.d.</th><th>Berikutnya</th><th>Checklist</th></tr></thead><tbody>${list.map(p=>{const s=lockS(p),m=tbDefM(p),done=m<=s;const ck=done?[]:tbChecksFor(p,m),ok=ck.filter(c=>c.ok===true).length,all=ck.filter(c=>c.ok!==null).length;
@@ -1318,7 +1321,7 @@ document.addEventListener("input",e=>{const t=e.target;if(!t.dataset||!tbDraft)r
   if(t.dataset.tbrek!==undefined){const id=t.dataset.tbrek;if(t.value.trim()==="")delete tbDraft.rek[id];else tbDraft.rek[id]=mv(t.value);const x=tbSaldo(tbP,tbM).find(y=>y.r.id===id),c=$(`[data-tbsel="${id}"]`);if(x&&c)c.innerHTML=tbSel(x.v,tbDraft.rek[id])}
   if(t.dataset.tbc!==undefined){if(t.checked)tbDraft.c[t.dataset.tbc]=true;else delete tbDraft.c[t.dataset.tbc]}});
 document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.tbc!==undefined){t.dispatchEvent(new Event("input",{bubbles:true}));rTutup()}});
-async function tbSaveCek(quiet){const r=await call("cek",{pt:tbP,m:tbM,data:{rek:tbDraft.rek,c:tbDraft.c}});D.settings.cek=D.settings.cek||{};D.settings.cek[r.key]=r.cek;D.ver=r.ver;saveLocal();tbKey="";if(!quiet)toast("Checklist tersimpan")}
+async function tbSaveCek(quiet){const r=await call("cek",{pt:tbP,m:tbM,data:{rek:tbDraft.rek,c:tbDraft.c}});D.settings.cek=D.settings.cek||{};D.settings.cek[r.key]=r.cek;catPut("cek|"+r.key,r.cek);D.ver=r.ver;saveLocal();tbKey="";if(!quiet)toast("Checklist tersimpan")}
 async function tbAct(act,btn){
   const P=tbP,m=tbM;
   if(act==="tbprev"){tbM=addM(tbM,-1);rTutup();return}
@@ -1343,6 +1346,139 @@ async function tbAct(act,btn){
       if(ket===null)return;if(!ket.trim()){toast("Alasan wajib diisi");return}
       const r=await call("tutup",{pt:P,m,buka:true,ket:ket.trim()});D.settings.tutup[r.pt]=r.tutup;D.ver=r.ver;saveLocal();toast(fmtMasa(m)+" dibuka kembali");render();return}
   }catch(x){toast(x.message)}finally{if(btn)btn.disabled=false}
+}
+
+/* ---------- Tutup tahun, PPh Badan, laporan tahunan & CALK ---------- */
+let tbTab="bulan",thDraft=null,thKey="";
+const catPut=(k,data)=>{D.cat=(D.cat||[]).filter(c=>c.kunci!==k).concat([{kunci:k,data:JSON.stringify(data)}]);CAT[k]=data};
+const TH_KEB=y=>`Laporan keuangan disusun berdasarkan Standar Akuntansi Keuangan Entitas Mikro, Kecil, dan Menengah (SAK EMKM) dengan dasar akrual dan konsep biaya historis, disajikan dalam Rupiah.
+Pendapatan jasa diakui ${(D.settings.kebijakan||{}).pendapatan==="selesai"?"saat jasa selesai diserahkan kepada pelanggan":"saat invoice diterbitkan kepada pelanggan"}. Uang muka dari pelanggan dicatat sebagai pendapatan diterima di muka.
+Aset tetap dicatat sebesar harga perolehan dan disusutkan dengan metode garis lurus sesuai kelompok umur manfaat (kelompok 1: 4 tahun, kelompok 2: 8 tahun, bangunan: 20 tahun). Pembelian di bawah ${rp(N((D.settings.kebijakan||{}).asetMin))} langsung dibebankan.
+PPN keluaran dan PPN masukan dicatat sebagai utang dan aset pajak, bukan sebagai pendapatan atau beban.`;
+const TH_UMUM=P=>{const p=ptOf(P);return `${p.legal||("PT "+P)}${p.berdiri?" didirikan pada tanggal "+fmtD(p.berdiri):""}${p.alamat?" dan berkedudukan di "+p.alamat:""}. Perusahaan bergerak di bidang jasa.${p.npwp?" NPWP: "+p.npwp+".":""}${p.pkp?" Perusahaan dikukuhkan sebagai Pengusaha Kena Pajak"+(p.pkpSejak?" sejak "+fmtD(p.pkpSejak):"")+".":""}`};
+function thFiskal(P,Y,f){
+  f=f||{};const t=lr(Y+"-01-01",Y+"-12-31",P).t,omzet=Math.round(t.pendapatan+t.lain_p),laba=Math.round(t.sblm);
+  const by=+String(ptOf(P).berdiri||"").slice(0,4),pp55ok=!!by&&+Y<=by+3&&omzet<=4.8e9,skema=f.skema||(pp55ok?"pp55":"umum");
+  const kp=N(f.kp),kn=N(f.kn),pkp=Math.max(0,Math.floor((laba+kp-kn)/1000)*1000);
+  const fas=omzet<=4.8e9?pkp:omzet<=50e9?Math.floor(pkp*4.8e9/omzet):0;
+  const pph=skema==="pp55"?Math.round(omzet*0.005):Math.round(fas*0.11+(pkp-fas)*0.22);
+  const dr=(ak)=>Math.round(LINES.filter(l=>l.pt===P&&l.akun===ak&&l.tgl>=Y+"-01-01"&&l.tgl<=Y+"-12-31"&&DOCMAP[l.doc]&&!(DOCMAP[l.doc].d||{}).pphBadan).reduce((s,l)=>s+l.d,0));
+  const k23=skema==="pp55"?0:dr(A.PPH23DM),k25=skema==="pp55"?0:dr(A.PPH25DM),kb=pph-k23-k25;
+  const sudah=DOCS.find(o=>o.pt===P&&(o.d||{}).pphBadan===Y);
+  return {omzet,laba,kp,kn,pkp,fas,pph,k23,k25,kb,skema,pp55ok,by,sudah,t};
+}
+function rTahun(){
+  const list=ptNames(),P=PT||(list.length===1?list[0]:"");let h="";
+  if(!P)return h+emptyC("Pilih PT dulu","Tutup tahun dan laporan tahunan dibuat per PT. Pilih PT di bagian atas.");
+  const Y=YR,key="thn|"+P+"|"+Y;
+  if(thKey!==key){thKey=key;const n=CAT[key]||{};thDraft={calk:Object.assign({umum:TH_UMUM(P),kebijakan:TH_KEB(Y),peristiwa:"",lain:""},n.calk||{}),fiskal:Object.assign({},n.fiskal||{}),by:n.by,at:n.at}}
+  const F=thFiskal(P,Y,thDraft.fiskal),to=Y+"-12-31",n=neraca(to,P),s=lockS(P),des=Y+"-12",due=asetDue(P,des),ro=!canW();
+  const ck=[
+    {t:"Penyusutan aset setahun sudah dicatat",ok:DOCS.some(o=>o.jenis==="aset"&&o.pt===P)?!due.length:null,s:due.length?due.length+" penyusutan belum dicatat s.d. Desember.":"Lengkap s.d. Desember "+Y+"."},
+    {t:"PPh 21 Desember dihitung ulang setahun",ok:null,s:"Cek di proses gaji Desember (tarif Pasal 17, bukan TER)."},
+    {t:"PPh Badan sudah dicatat",ok:F.skema==="pp55"?null:!!F.sudah,s:F.skema==="pp55"?"Pakai PPh final 0,5% (PP 55), dibayar tiap bulan, tidak ada jurnal akhir tahun.":F.sudah?"Dicatat "+fmtD(F.sudah.tgl)+" · "+rp(F.sudah.total):"Hitung di bawah, lalu klik Catat jurnal PPh Badan."},
+    {t:"Neraca seimbang per 31 Desember",ok:!n.selisih,s:n.selisih?"Selisih "+fN(n.selisih):"Aset = kewajiban + ekuitas."},
+    {t:"Desember "+Y+" sudah tutup buku",ok:!!s&&s>=des,s:s>=des?"Terkunci s.d. "+fmtMasa(s)+".":"Sekarang "+(s?"terkunci s.d. "+fmtMasa(s):"belum pernah tutup buku")+". Tutup lewat tab bulanan setelah semua di atas beres."}];
+  h+=`<div class="card pjprog"><div style="flex:1;min-width:200px"><b>${esc(P)} · Tahun buku ${Y}</b><div class="hint">1 Januari – 31 Desember ${Y} · ganti tahun di pilihan "Tahun buku" atas</div></div><button class="btn primary" type="button" data-act="yrprint">📄 Laporan tahunan (cetak / PDF)</button></div>`;
+  h+=`<div class="tbs"><div><small>Pendapatan</small><b>${rpS(F.omzet)}</b></div><div><small>Laba sebelum pajak</small><b>${rpS(F.laba)}</b></div><div><small>Total aset 31 Des</small><b>${rpS(n.ta)}</b></div><div><small>Total ekuitas 31 Des</small><b>${rpS(n.te)}</b></div></div>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Checklist tutup tahun</h3></div><div class="tckl">${ck.map(c=>`<div class="tck"><span class="ic ${c.ok===true?"ok":c.ok===false?"no":""}">${c.ok===true?"✓":c.ok===false?"!":"i"}</span><span class="bd"><b>${esc(c.t)}</b><small>${esc(c.s)}</small></span></div>`).join("")}</div></div>`;
+  const inp2=(k,v,lbl)=>`<label class="f">${lbl}<input class="money" data-thf="${k}" value="${v?mf(v):""}" placeholder="0" inputmode="numeric"${ro?" disabled":""}></label>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Perhitungan PPh Badan ${Y}</h3><small>estimasi, cek ulang dengan konsultan pajak</small></div>
+    <div class="fgrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px"><label class="f">Skema<select data-thf="skema"${ro?" disabled":""}><option value="umum"${F.skema==="umum"?" selected":""}>Tarif umum 22% (fasilitas Pasal 31E)</option><option value="pp55"${F.skema==="pp55"?" selected":""}>PPh final 0,5% omzet (PP 55/2022)</option></select></label>${F.skema==="umum"?inp2("kp",F.kp,"Koreksi fiskal positif")+inp2("kn",F.kn,"Koreksi fiskal negatif"):""}</div>
+    ${F.skema==="pp55"&&!F.pp55ok?`<p class="hint" style="color:var(--warn-ink);margin:0 0 10px">PP 55 untuk PT hanya 4 tahun pajak sejak terdaftar${F.by?" ("+F.by+"–"+(F.by+3)+")":""} dan omzet maks Rp 4,8 M. Cek lagi.</p>`:""}
+    <div class="tw" style="border:0"><table class="t">${F.skema==="pp55"?`<tr><td>Peredaran bruto (omzet) setahun</td><td class="r">${fN(F.omzet)}</td></tr><tr class="tot"><td>PPh final 0,5% (disetor tiap bulan)</td><td class="r">${fN(F.pph)}</td></tr>`:
+    `<tr><td>Laba sebelum pajak (komersial)</td><td class="r">${fA(F.laba)}</td></tr><tr><td class="ind">Koreksi fiskal positif</td><td class="r">${fA(F.kp)}</td></tr><tr><td class="ind">Koreksi fiskal negatif</td><td class="r">${F.kn?"("+fN(F.kn)+")":"–"}</td></tr><tr class="sub"><td>Penghasilan kena pajak (dibulatkan ribuan)</td><td class="r">${fA(F.pkp)}</td></tr>
+     <tr><td class="ind">Bagian dapat fasilitas 31E × 11%${F.omzet>4.8e9&&F.omzet<=50e9?` <small>(4,8 M ÷ omzet ${rpS(F.omzet)})</small>`:""}</td><td class="r">${fA(Math.round(F.fas*0.11))}</td></tr><tr><td class="ind">Bagian tarif penuh × 22%</td><td class="r">${fA(Math.round((F.pkp-F.fas)*0.22))}</td></tr><tr class="sub"><td>PPh Badan terutang</td><td class="r">${fA(F.pph)}</td></tr>
+     <tr><td class="ind">Dikurangi PPh 23 dipotong klien</td><td class="r">${F.k23?"("+fN(F.k23)+")":"–"}</td></tr><tr><td class="ind">Dikurangi PPh 25 yang sudah dibayar</td><td class="r">${F.k25?"("+fN(F.k25)+")":"–"}</td></tr><tr class="tot"><td>${F.kb>=0?"PPh 29 kurang bayar (setor sebelum lapor SPT Tahunan, maks 30 April)":"Lebih bayar"}</td><td class="r">${fA(Math.abs(F.kb))}</td></tr>`}</table></div>
+    ${ro?"":`<div class="bar" style="margin-top:12px;justify-content:flex-end">${F.skema==="umum"?(F.sudah?`<a href="#" data-doc="${F.sudah.id}" class="hint" style="align-self:center">Jurnal PPh Badan sudah dicatat · lihat</a>`:`<button class="btn" type="button" data-act="yrjurnal"${F.pph>0?"":" disabled"}>Catat jurnal PPh Badan</button>`):""}<button class="btn primary" type="button" data-act="yrsave">Simpan</button></div>`}</div>`;
+  const ta=(k,lbl,ph)=>`<label class="f full" style="margin-bottom:10px">${lbl}<textarea data-thc="${k}" rows="${k==="kebijakan"?7:3}" placeholder="${esc(ph||"")}"${ro?" disabled":""}>${esc(thDraft.calk[k]||"")}</textarea></label>`;
+  h+=`<div class="card" style="margin-top:12px"><div class="card-h"><h3>Catatan atas Laporan Keuangan (CALK)</h3><small>teks bisa diedit; rincian angka dibuat otomatis</small></div>
+    ${ta("umum","1. Gambaran umum perusahaan")}${ta("kebijakan","2. Dasar penyusunan & kebijakan akuntansi")}${ta("peristiwa","Peristiwa setelah tanggal neraca","Kosongkan kalau tidak ada")}${ta("lain","Catatan lain","mis. kontinjensi, transaksi pihak berelasi")}
+    <p class="hint" style="margin:0">Catatan angka (kas & bank, piutang, aset tetap, utang, pajak, ekuitas, pendapatan, beban, PPh Badan) disusun otomatis di laporan tahunan.${thDraft.by?" Terakhir disimpan "+esc(thDraft.by)+" · "+fmtD(locD(thDraft.at))+".":""}</p>
+    ${ro?"":`<div class="bar" style="margin-top:10px;justify-content:flex-end"><button class="btn" type="button" data-act="yrreset">Isi ulang teks standar</button><button class="btn primary" type="button" data-act="yrsave">Simpan CALK</button></div>`}</div>`;
+  return h;
+}
+document.addEventListener("input",e=>{const t=e.target;if(!t.dataset||!thDraft)return;
+  if(t.dataset.thc!==undefined)thDraft.calk[t.dataset.thc]=t.value;
+  if(t.dataset.thf!==undefined)thDraft.fiskal[t.dataset.thf]=t.dataset.thf==="skema"?t.value:mv(t.value)});
+document.addEventListener("change",e=>{const t=e.target;if(t.dataset&&t.dataset.thf!==undefined){t.dispatchEvent(new Event("input",{bubbles:true}));rTutup()}});
+async function thAct(act,btn){
+  const P=PT||(ptNames().length===1?ptNames()[0]:""),Y=YR;if(!P)return;
+  if(act==="yrprint"){thReport(P,Y);return}
+  if(act==="yrreset"){if(!confirm("Ganti teks gambaran umum & kebijakan akuntansi dengan teks standar?"))return;thDraft.calk.umum=TH_UMUM(P);thDraft.calk.kebijakan=TH_KEB(Y);rTutup();return}
+  if(act==="yrjurnal"){const F=thFiskal(P,Y,thDraft.fiskal),L=[{akun:"8-1001",ket:"PPh Badan "+Y,d:F.pph,k:0}];
+    if(F.k23)L.push({akun:A.PPH23DM,ket:"Kredit PPh 23",d:0,k:F.k23});if(F.k25)L.push({akun:A.PPH25DM,ket:"Kredit PPh 25",d:0,k:F.k25});
+    if(F.kb>0)L.push({akun:"2-1305",ket:"PPh 29 kurang bayar",d:0,k:F.kb});else if(F.kb<0)L.push({akun:"2-1305",ket:"PPh lebih bayar",d:-F.kb,k:0});
+    openDoc("jurnal",null,{pt:P,tgl:Y+"-12-31",ket:"PPh Badan tahun "+Y,d:{lines:L,pphBadan:Y}});return}
+  if(act==="yrsave"){if(btn)btn.disabled=true;try{const r=await call("note",{pt:P,key:"thn|"+P+"|"+Y,data:{calk:thDraft.calk,fiskal:thDraft.fiskal}});catPut(r.key,r.data);D.ver=r.ver;saveLocal();thKey="";toast("Tersimpan");rTutup()}catch(x){toast(x.message)}finally{if(btn)btn.disabled=false}}
+}
+function thReport(P,Y){
+  const p=ptOf(P),nm=p.legal||("PT "+P),y0=String(+Y-1),to=Y+"-12-31",to0=y0+"-12-31",n=neraca(to,P),n0=neraca(to0,P),f=lr(Y+"-01-01",to,P),f0=lr(y0+"-01-01",to0,P);
+  const c=(thDraft&&thKey==="thn|"+P+"|"+Y?thDraft:(CAT["thn|"+P+"|"+Y]||{})),calk=Object.assign({umum:TH_UMUM(P),kebijakan:TH_KEB(Y)},c.calk||{}),F=thFiskal(P,Y,c.fiskal||{});
+  const E=s=>esc(s==null?"":String(s)),A2=v=>fA(v),para=t=>String(t||"").split(/\n+/).filter(x=>x.trim()).map(x=>`<p>${E(x)}</p>`).join("");
+  const r2=(l,a,b,cls)=>`<tr class="${cls||""}"><td>${l}</td><td class="n">${A2(a)}</td><td class="n">${A2(b)}</td></tr>`;
+  const th2=`<tr><th></th><th class="n">${Y}</th><th class="n">${y0}</th></tr>`;
+  const merge=(a,b)=>{const m={};a.forEach(x=>m[x.a.kode]={a:x.a,v:x.v,v0:0});b.forEach(x=>{(m[x.a.kode]=m[x.a.kode]||{a:x.a,v:0}).v0=x.v});return Object.values(m).sort((x,z)=>x.a.kode.localeCompare(z.a.kode))};
+  const nr=j=>merge(n.rows[j],n0.rows[j]).map(x=>r2("&nbsp;&nbsp;"+E(x.a.nama),x.v,x.v0)).join("");
+  const lrs=(j,l,tl)=>{const m=merge(f.g[j],f0.g[j]);return m.length?`<tr class="g"><td colspan="3">${l}</td></tr>`+m.map(x=>r2("&nbsp;&nbsp;"+E(x.a.nama),x.v,x.v0)).join("")+r2(tl,f.t[j],f0.t[j],"s"):""};
+  const ek=ekuitas(Y+"-01-01",to,P),ak=arusKas(Y+"-01-01",to,P),akL=x=>r2("&nbsp;&nbsp;"+E(x.l),x.v,"");
+  // CALK angka
+  const bal=(ak_,t)=>{const x=agg("",t,P)[ak_];return x?x.d-x.k:0};
+  const kasR=D.rek.filter(r=>r.pt===P).map(r=>({n:r.nama+(r.norek?" ("+r.bank+" "+r.norek+")":""),v:bal(r.akun,to),v0:bal(r.akun,to0)})).filter(x=>Math.round(x.v)||Math.round(x.v0));
+  const byK=(akun,t,sg)=>{const m={};LINES.forEach(l=>{if(l.pt!==P||l.akun!==akun||l.tgl>t)return;m[l.kontak||""]=(m[l.kontak||""]||0)+(l.d-l.k)*sg});return Object.keys(m).filter(k=>Math.round(m[k])).map(k=>({n:ktNm(k)||"(tanpa nama)",v:m[k]})).sort((a,b)=>b.v-a.v)};
+  const piu=byK(A.PIUT,to,1),utg=byK(A.UTANG,to,-1);
+  const grpAk=(fl,t,t0,sg)=>D.akun.filter(fl).map(a=>({n:a.nama,v:bal(a.kode,t)*sg,v0:bal(a.kode,t0)*sg})).filter(x=>Math.round(x.v)||Math.round(x.v0));
+  const pjDM=grpAk(a=>a.jenis==="aset"&&/^1-15/.test(a.kode),to,to0,1),utP=grpAk(a=>a.jenis==="kewajiban"&&/^2-13/.test(a.kode),to,to0,-1);
+  const asets=DOCS.filter(o=>o.jenis==="aset"&&o.pt===P&&o.tgl<=to).map(o=>{const ak_=asetAkum(o,Y+"-12");return {n:o.d.nama,akun:akNm(o.d.akun),tgl:o.tgl,h:N(o.d.nilai),ak:ak_,nb:N(o.d.nilai)-ak_}});
+  const tbl=(head,rows,tot)=>`<table><tr>${head.map((x,i)=>`<th${i?' class="n"':""}>${x}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map((x,i)=>`<td${i&&typeof x==="number"?' class="n"':""}>${typeof x==="number"?A2(x):E(x)}</td>`).join("")}</tr>`).join("")}${tot?`<tr class="t">${tot.map((x,i)=>`<td${i?' class="n"':""}>${typeof x==="number"?A2(x):E(x)}</td>`).join("")}</tr>`:""}</table>`;
+  const two=(rows,lbl)=>rows.length?tbl([lbl,Y,y0],rows.map(x=>[x.n,x.v,x.v0]),["Jumlah",sumBy(rows,x=>x.v),sumBy(rows,x=>x.v0)]):"<p>Tidak ada saldo.</p>";
+  let no=2;const N_=t=>`<h3>${++no}. ${t}</h3>`;
+  const html=`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Laporan Keuangan ${E(nm)} ${Y}</title><style>
+body{font-family:Georgia,"Times New Roman",serif;color:#111;margin:0;background:#f3f3f3;font-size:13px;line-height:1.5}
+.pg{background:#fff;max-width:780px;margin:18px auto;padding:48px 56px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+h1{font-size:24px;margin:0 0 6px}h2{font-size:16px;text-align:center;margin:0 0 2px;text-transform:uppercase;letter-spacing:.04em}h3{font-size:14px;margin:22px 0 6px}
+.sub{text-align:center;color:#444;margin-bottom:18px}table{width:100%;border-collapse:collapse;margin:6px 0 10px;font-size:12.5px}th,td{padding:4px 6px;border-bottom:1px solid #e2e2e2;vertical-align:top;text-align:left}
+th{font-size:11.5px;color:#444;border-bottom:1.5px solid #111}.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}tr.g td{font-weight:700;padding-top:10px;border-bottom:0}
+tr.s td{font-weight:700;border-top:1px solid #999}tr.t td{font-weight:700;border-top:1.5px solid #111;border-bottom:3px double #111}p{margin:0 0 8px;text-align:justify}
+.cover{min-height:820px;display:flex;flex-direction:column;justify-content:center;text-align:center}.cover h1{font-size:30px}.cover .y{font-size:17px;margin-top:12px}.cover small{display:block;margin-top:60px;color:#555;font-family:system-ui,sans-serif}
+.ok{font-family:system-ui,sans-serif;font-size:11.5px;color:#0a7a3e}.bad{font-family:system-ui,sans-serif;font-size:11.5px;color:#b42318}
+.bar{position:sticky;top:0;background:#111;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-family:system-ui,sans-serif;font-size:14px;z-index:2}.bar button{border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
+@media print{body{background:#fff}.bar{display:none}.pg{box-shadow:none;margin:0;max-width:none;padding:0;page-break-after:always}.cover{min-height:92vh}@page{size:A4;margin:18mm 16mm}}
+@media (max-width:640px){.pg{padding:24px 16px;margin:0}}
+</style></head><body><div class="bar"><span style="flex:1">Laporan Keuangan ${E(nm)} ${Y}</span><button onclick="print()">Cetak / Simpan PDF</button></div>
+<div class="pg cover"><h1>${E(nm)}</h1><div>LAPORAN KEUANGAN</div><div class="y">Untuk tahun yang berakhir pada tanggal 31 Desember ${Y}<br>dengan angka perbandingan tahun ${y0}</div><small>Disusun dari aplikasi Finance · ${fmtD(TODAY)}${lockS(P)>=Y+"-12"?"":" · DRAFT (Desember "+Y+" belum tutup buku)"}</small></div>
+<div class="pg"><h2>Laporan Posisi Keuangan</h2><div class="sub">${E(nm)} · per 31 Desember ${Y} dan ${y0}</div><table>${th2}
+<tr class="g"><td colspan="3">ASET</td></tr>${nr("aset")}${r2("Jumlah aset",n.ta,n0.ta,"t")}
+<tr class="g"><td colspan="3">KEWAJIBAN</td></tr>${nr("kewajiban")}${r2("Jumlah kewajiban",n.tk,n0.tk,"s")}
+<tr class="g"><td colspan="3">EKUITAS</td></tr>${nr("ekuitas")}${r2("&nbsp;&nbsp;Saldo laba tahun-tahun lalu",n.ditahan,n0.ditahan)}${r2("&nbsp;&nbsp;Laba (rugi) tahun berjalan",n.berjalan,n0.berjalan)}${r2("Jumlah ekuitas",n.te,n0.te,"s")}
+${r2("JUMLAH KEWAJIBAN DAN EKUITAS",n.tk+n.te,n0.tk+n0.te,"t")}</table>${n.selisih?`<p class="bad">Neraca belum seimbang: selisih ${fN(n.selisih)}</p>`:""}</div>
+<div class="pg"><h2>Laporan Laba Rugi</h2><div class="sub">${E(nm)} · untuk tahun yang berakhir 31 Desember ${Y} dan ${y0}</div><table>${th2}
+${lrs("pendapatan","Pendapatan usaha","Jumlah pendapatan")}${lrs("hpp","Beban pokok jasa","Jumlah beban pokok")}${r2("LABA KOTOR",f.t.kotor,f0.t.kotor,"s")}${lrs("beban","Beban operasional","Jumlah beban operasional")}${r2("LABA USAHA",f.t.usaha,f0.t.usaha,"s")}
+${lrs("lain_p","Pendapatan lain-lain","Jumlah pendapatan lain")}${lrs("lain_b","Beban lain-lain","Jumlah beban lain")}${r2("LABA SEBELUM PAJAK",f.t.sblm,f0.t.sblm,"s")}${lrs("pajak","Pajak penghasilan","Jumlah pajak")}${r2("LABA (RUGI) BERSIH",f.t.laba,f0.t.laba,"t")}</table></div>
+<div class="pg"><h2>Laporan Perubahan Ekuitas</h2><div class="sub">${E(nm)} · untuk tahun yang berakhir 31 Desember ${Y}</div>
+${tbl(["","Saldo 1 Jan "+Y,"Penambahan","Pengurangan","Saldo 31 Des "+Y],ek.rows.map(r=>[r.nama,r.aw,r.tambah,-r.kurang,r.ak]),["Jumlah ekuitas",ek.aw,ek.tambah,-ek.kurang,ek.ak])}
+<h2 style="margin-top:34px">Laporan Arus Kas</h2><div class="sub">${E(nm)} · untuk tahun yang berakhir 31 Desember ${Y} (metode tidak langsung)</div><table>
+<tr class="g"><td colspan="3">Arus kas dari aktivitas operasi</td></tr>${r2("&nbsp;&nbsp;Laba bersih",ak.laba,"")}${ak.g.dep.concat(ak.g.op).map(akL).join("")}${r2("Kas bersih dari aktivitas operasi",ak.op,"","s")}
+<tr class="g"><td colspan="3">Arus kas dari aktivitas investasi</td></tr>${ak.g.inv.map(akL).join("")}${r2("Kas bersih dari aktivitas investasi",ak.inv,"","s")}
+<tr class="g"><td colspan="3">Arus kas dari aktivitas pendanaan</td></tr>${ak.g.fin.map(akL).join("")}${r2("Kas bersih dari aktivitas pendanaan",ak.fin,"","s")}
+${r2("Kenaikan (penurunan) kas",ak.net,"","s")}${r2("Kas dan bank awal tahun",ak.awal,"")}${r2("KAS DAN BANK AKHIR TAHUN",ak.awal+ak.net,"","t")}</table></div>
+<div class="pg"><h2>Catatan atas Laporan Keuangan</h2><div class="sub">${E(nm)} · 31 Desember ${Y}</div>
+<h3>1. Umum</h3>${para(calk.umum)}<h3>2. Ikhtisar kebijakan akuntansi</h3>${para(calk.kebijakan)}
+${N_("Kas dan bank")}${two(kasR,"Rekening")}
+${N_("Piutang usaha")}${piu.length?tbl(["Pelanggan","31 Des "+Y],piu.map(x=>[x.n,x.v]),["Jumlah",sumBy(piu,x=>x.v)]):"<p>Tidak ada piutang usaha per 31 Desember "+Y+".</p>"}
+${N_("Pajak dibayar di muka")}${two(pjDM,"Jenis")}
+${N_("Aset tetap")}${asets.length?tbl(["Aset","Harga perolehan","Akumulasi penyusutan","Nilai buku"],asets.map(x=>[x.n+" · "+x.akun+" · "+fmtD(x.tgl),x.h,-x.ak,x.nb]),["Jumlah",sumBy(asets,x=>x.h),-sumBy(asets,x=>x.ak),sumBy(asets,x=>x.nb)])+"<p>Penyusutan dihitung dengan metode garis lurus.</p>":"<p>Perusahaan tidak memiliki aset tetap.</p>"}
+${N_("Utang usaha")}${utg.length?tbl(["Vendor","31 Des "+Y],utg.map(x=>[x.n,x.v]),["Jumlah",sumBy(utg,x=>x.v)]):"<p>Tidak ada utang usaha per 31 Desember "+Y+".</p>"}
+${N_("Utang pajak")}${two(utP,"Jenis")}
+${N_("Ekuitas")}${tbl(["","31 Des "+Y],ek.rows.map(r=>[r.nama,r.ak]),["Jumlah",ek.ak])}
+${N_("Pendapatan")}${two(merge(f.g.pendapatan,f0.g.pendapatan).map(x=>({n:x.a.nama,v:x.v,v0:x.v0})),"Jenis pendapatan")}
+${N_("Beban pokok dan beban operasional")}${two(merge(f.g.hpp.concat(f.g.beban),f0.g.hpp.concat(f0.g.beban)).map(x=>({n:x.a.nama,v:x.v,v0:x.v0})),"Jenis beban")}
+${N_("Pajak penghasilan")}${F.skema==="pp55"?`<p>Perusahaan menggunakan PPh final 0,5% dari peredaran bruto (PP 55/2022). Peredaran bruto ${Y}: Rp ${fN(F.omzet)}; PPh final: Rp ${fN(F.pph)}.</p>`:tbl(["","Jumlah"],[["Laba sebelum pajak (komersial)",F.laba],["Koreksi fiskal positif",F.kp],["Koreksi fiskal negatif",-F.kn],["Penghasilan kena pajak",F.pkp],["PPh Badan terutang",F.pph],["Kredit pajak PPh 23",-F.k23],["Kredit pajak PPh 25",-F.k25]],[F.kb>=0?"PPh 29 kurang bayar":"Lebih bayar",Math.abs(F.kb)])}
+${N_("Peristiwa setelah periode pelaporan")}${para(calk.peristiwa)||"<p>Tidak ada peristiwa penting setelah tanggal neraca yang memerlukan penyesuaian atau pengungkapan.</p>"}
+${String(calk.lain||"").trim()?N_("Lain-lain")+para(calk.lain):""}
+</div></body></html>`;
+  const w=window.open("","_blank");if(!w){toast("Pop-up diblokir browser. Izinkan pop-up untuk halaman ini lalu coba lagi.");return}
+  w.document.open();w.document.write(html);w.document.close();
 }
 
 /* ---------- Data Induk ---------- */
@@ -1771,8 +1907,8 @@ document.addEventListener("click",async e=>{
   const pj=e.target.closest("[data-pj]");if(pj&&!pj.closest("#v-induk")){openPj(pj.dataset.pj);return}
   const pr=e.target.closest("[data-prj]");if(pr){prjSel=prjSel===pr.dataset.prj?"":pr.dataset.prj;rProyek();return}
   const bb=e.target.closest("[data-bb]");if(bb){bbAkun=bb.dataset.bb;lapTab="bb";rLap();window.scrollTo(0,0);return}
-  const tb=e.target.closest("[data-jt],[data-bt],[data-lt],[data-it],[data-imf],[data-gt],[data-at],[data-pjt]");
-  if(tb){if(tb.dataset.jt)jualTab=tb.dataset.jt;if(tb.dataset.bt)beliTab=tb.dataset.bt;if(tb.dataset.lt)lapTab=tb.dataset.lt;if(tb.dataset.it){indTab=tb.dataset.it;setDraft=null}if(tb.dataset.imf){impF=tb.dataset.imf;impPg=0}if(tb.dataset.gt)gajiTab=tb.dataset.gt;if(tb.dataset.at)asetTab=tb.dataset.at;if(tb.dataset.pjt)pjTab=tb.dataset.pjt;render();return}
+  const tb=e.target.closest("[data-jt],[data-bt],[data-lt],[data-it],[data-imf],[data-gt],[data-at],[data-pjt],[data-tbt]");
+  if(tb){if(tb.dataset.jt)jualTab=tb.dataset.jt;if(tb.dataset.bt)beliTab=tb.dataset.bt;if(tb.dataset.lt)lapTab=tb.dataset.lt;if(tb.dataset.it){indTab=tb.dataset.it;setDraft=null}if(tb.dataset.imf){impF=tb.dataset.imf;impPg=0}if(tb.dataset.gt)gajiTab=tb.dataset.gt;if(tb.dataset.at)asetTab=tb.dataset.at;if(tb.dataset.pjt)pjTab=tb.dataset.pjt;if(tb.dataset.tbt)tbTab=tb.dataset.tbt;render();return}
   const a=e.target.closest("[data-act]");if(!a)return;const act=a.dataset.act;e.preventDefault();
   if(act==="add"){$("#addDlg").showModal()}
   else if(act==="more"){$("#moreDlg").showModal();try{document.activeElement.blur()}catch(_){}}
@@ -1789,6 +1925,7 @@ document.addEventListener("click",async e=>{
   else if(act==="imsave")impSave();
   else if(act==="susut")catatSusut();
   else if(act.startsWith("tb"))tbAct(act,a);
+  else if(act.startsWith("yr"))thAct(act,a);
   else if(act==="imrule")openRule();
   else if(act==="impkt")impKontak(a.dataset.tipe);
   else if(act==="setreset"){setDraft=null;rInduk()}
