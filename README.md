@@ -3,7 +3,7 @@
 Aplikasi pembukuan (PWA) untuk Vorent, Izinin, dan Echoffice: double-entry, per PT, mulai dari tanggal pendirian.
 Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-prospek), tapi **data keuangan tidak diambil dari Prospek**. Semua diinput oleh tim finance.
 
-## Fitur (Fondasi + Tahap 2–4)
+## Fitur (Fondasi + Tahap 2–5)
 - **Data Induk**: profil PT & pajak (PKP sejak, jenis pajak, kode invoice), kebijakan akuntansi, Daftar Akun (COA standar perusahaan jasa),
   pelanggan, vendor & agen, karyawan & sales, jasa/paket, rekening bank & kas.
 - **Transaksi dengan jurnal otomatis**: penjualan (invoice, PPN, PPh 23 dipotong klien, DP), terima pembayaran, pembelian/beban (PPN masukan, potong PPh),
@@ -19,6 +19,8 @@ Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-pro
 - **Tutup Buku bulanan** — per PT per bulan: cek otomatis (rekonsiliasi saldo bank vs rekening koran, penyusutan, gaji, neraca seimbang, akun lain-lain, status pajak), cek manual, lalu kunci periode. Bulan yang sudah ditutup tidak bisa ditambah/diubah/dihapus (dicek juga di server). Bisa dibuka kembali dengan alasan; semua tercatat di riwayat.
 
 - **Arus Kas & Perubahan Ekuitas** — menu Laporan: arus kas metode tidak langsung (operasi, investasi, pendanaan) yang dicocokkan otomatis dengan saldo kas & bank, dan perubahan ekuitas (modal, prive/dividen, laba ditahan) yang dicocokkan dengan neraca. Ikut di Download Excel.
+
+- **Rekap SPT masa** — menu Pajak → Rekap SPT masa: daftar faktur PPN keluaran & masukan (DPP, DPP nilai lain, PPN, kurang/lebih bayar), PPh 21 pegawai (dari proses gaji) & bukan pegawai, PPh 23/26 & 4(2) yang dipotong ke vendor, PPh 23 yang dipotong klien (kredit pajak). Dicocokkan otomatis dengan saldo akun pajak, peringatan NPWP kosong, bisa diunduh Excel per masa.
 
 Tahap berikutnya: Arus Kas, Perubahan Ekuitas, CALK, laporan manajemen & tahunan.
 
