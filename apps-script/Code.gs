@@ -85,7 +85,7 @@ const DEF_SET = {
     { n: 'Izinin', legal: '', bentuk: 'PT', npwp: '', alamat: '', berdiri: '', pkp: true, pkpSejak: '', prefix: 'IZN', pajak: PJ_DEF },
     { n: 'Echoffice', legal: '', bentuk: 'PT', npwp: '', alamat: '', berdiri: '', pkp: true, pkpSejak: '', prefix: 'ECO', pajak: PJ_DEF }
   ],
-  kebijakan: { pendapatan: 'invoice', asetMin: 2500000, susut: 'garis lurus', ppn: 12, dpp: '11/12' },
+  kebijakan: { pendapatan: 'invoice', asetMin: 2500000, susut: 'garis lurus', ppn: 12, dpp: '11/12', komisi: 'lunas' },
   aturan: [],   // aturan import rekening koran: [{ kata, akun }]
   // tarif BPJS (persen) & batas upah; bisa diubah di Data Induk
   payroll: { kesP: 4, kesK: 1, kesMax: 12000000, jhtP: 3.7, jhtK: 2, jpP: 2, jpK: 1, jpMax: 10547400, jkk: 0.24, jkm: 0.3 },
@@ -461,9 +461,19 @@ function del(token, kind, id) {
     if (kind === 'rek' && usedIn(old.id)) throw new Error('Rekening sudah dipakai transaksi. Nonaktifkan saja.');
     if (kind === 'kontak' && usedIn(old.id)) throw new Error('Kontak sudah dipakai transaksi. Nonaktifkan saja.');
     if (kind === 'dok') {
-      kunci_(readSet_(), old.pt, old.tgl);
-      const ref = read_('dok').find(d => d.id !== id && (d.jenis === 'terima' || d.jenis === 'bayar') && String(d.data).indexOf('"' + id + '"') >= 0);
-      if (ref) throw new Error('Sudah ada pembayaran untuk dokumen ini (' + ref.tgl + '). Hapus pembayarannya dulu.');
+      const set = readSet_(), all = read_('dok');
+      let grp = ''; try { grp = (JSON.parse(old.data || '{}').antar || {}).grp || ''; } catch (e) {}
+      // transaksi antar PT: pasangannya di PT lain ikut dihapus
+      const group = grp ? all.filter(d => String(d.data).indexOf('"grp":"' + grp + '"') >= 0) : [old];
+      group.forEach(d => { writer_(u, d.pt); kunci_(set, d.pt, d.tgl); });
+      group.forEach(g => {
+        const ref = all.find(d => d.id !== g.id && (d.jenis === 'terima' || d.jenis === 'bayar') && String(d.data).indexOf('"' + g.id + '"') >= 0);
+        if (ref) throw new Error('Sudah ada pembayaran untuk dokumen ini (' + ref.tgl + '). Hapus pembayarannya dulu.');
+      });
+      if (group.length > 1) {
+        group.map(d => d._row).sort((a, b) => b - a).forEach(r => ss_().getSheetByName(SH.dok).deleteRow(r));
+        return { ver: bump_(), ids: group.map(d => d.id) };
+      }
     }
     ss_().getSheetByName(SH[kind]).deleteRow(old._row);
     if (kind === 'rek' && old.akun) { const a = read_('akun').find(x => x.kode === old.akun); if (a && !usedIn(old.akun)) ss_().getSheetByName(SH.akun).deleteRow(a._row); }
@@ -488,7 +498,8 @@ function saveSettings(token, s) {
     pts: pts,
     kebijakan: s.kebijakan && typeof s.kebijakan === 'object' ? {
       pendapatan: s.kebijakan.pendapatan === 'selesai' ? 'selesai' : 'invoice', asetMin: Math.max(0, Number(s.kebijakan.asetMin) || 0),
-      susut: str(s.kebijakan.susut, 40) || 'garis lurus', ppn: Number(s.kebijakan.ppn) || 12, dpp: s.kebijakan.dpp === '1' ? '1' : '11/12' } : cur.kebijakan,
+      susut: str(s.kebijakan.susut, 40) || 'garis lurus', ppn: Number(s.kebijakan.ppn) || 12, dpp: s.kebijakan.dpp === '1' ? '1' : '11/12',
+      komisi: s.kebijakan.komisi === 'terbit' ? 'terbit' : 'lunas' } : cur.kebijakan,
     payroll: s.payroll && typeof s.payroll === 'object' ? Object.keys(DEF_SET.payroll).reduce((o, k) => { o[k] = Math.max(0, Number(s.payroll[k]) || 0); return o; }, {}) : cur.payroll,
     aturan: Array.isArray(s.aturan) ? s.aturan.filter(a => a && str(a.kata, 60) && a.akun).map(a => ({ kata: str(a.kata, 60), akun: str(a.akun, 20) })).slice(0, 300) : cur.aturan,
     kat: cur.kat, tutup: cur.tutup, cek: cur.cek,
