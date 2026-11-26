@@ -249,6 +249,9 @@ label.tck{cursor:pointer}label.tck input{width:20px;height:20px;margin:3px;flex:
 @media (max-width:700px){.tbrk .r{grid-template-columns:1fr 1fr}.tbrk .n{grid-column:1/-1}.tbrk .k{grid-column:1/-1;order:3}.tbrk .b{text-align:left}}
 .lockb{background:var(--ok-soft);color:var(--ok-ink);border-radius:12px;padding:10px 14px;font-weight:650;margin-bottom:12px;line-height:1.6}
 .lockb.full{grid-column:1/-1;margin:0}
+.mglg{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-2);margin-top:6px}.mglg i{display:inline-block;width:12px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.mgbar{padding:8px 0;border-top:1px solid var(--line)}.mgbar:first-of-type{border-top:0}.mgbl{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}.mgbl span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mgtr{height:7px;border-radius:5px;background:var(--panel-2);margin:5px 0 3px;overflow:hidden}.mgtr i{display:block;height:100%;border-radius:5px;background:var(--acc)}.mgtr i.w{background:var(--warn)}
 .tbs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
 .tbs>div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
 .tbs small{display:block;color:var(--ink-3);font-size:12.5px;margin-bottom:2px}.tbs b{font-size:17px;font-weight:750}
@@ -900,12 +903,13 @@ function rProyek(){
   $("#v-proyek").innerHTML=h;
 }
 /* ---------- Laporan ---------- */
-let lapTab="lr",bbAkun="";
+let lapTab="mg",bbAkun="";
 function rLap(){
   const p=per(),to=asOf();
-  let h=tabs(lapTab,[["lr","Laba Rugi"],["nrc","Neraca"],["ak","Arus Kas"],["ek","Perubahan Ekuitas"],["ns","Neraca Saldo"],["bb","Buku Besar"]],"lt");
+  let h=tabs(lapTab,[["mg","Manajemen"],["lr","Laba Rugi"],["nrc","Neraca"],["ak","Arus Kas"],["ek","Perubahan Ekuitas"],["ns","Neraca Saldo"],["bb","Buku Besar"]],"lt");
   const head=(t,s)=>`<div class="lap-h"><b>${esc(t)}</b><small>${esc(PT?(ptOf(PT).legal||PT):"Semua PT (gabungan)")} · ${esc(s)}</small></div>`;
   const row=(lbl,v,cls)=>`<tr class="${cls||""}"><td class="${cls?"":"ind"}">${lbl}</td><td class="r${v<0?" neg":""}">${fA(v)}</td></tr>`;
+  if(lapTab==="mg"){$("#v-lap").innerHTML=h+mgHTML();return}
   if(lapTab==="lr"){const f=lr(p.from,p.to),g=f.g,t=f.t;
     const sec=(j,lbl,tl)=>`<tr class="g"><td colspan="2">${lbl}</td></tr>`+(g[j].length?g[j].map(x=>`<tr class="click" data-bb="${x.a.kode}"><td class="ind">${esc(x.a.kode+" "+x.a.nama)}</td><td class="r">${fA(x.v)}</td></tr>`).join(""):`<tr><td class="ind hint">–</td><td></td></tr>`)+row(tl,t[j],"sub");
     h+=`<div class="card">${head("Laporan Laba Rugi",perLbl())}<div class="tw" style="border:0"><table class="t">${sec("pendapatan","Pendapatan usaha","Total pendapatan")}${sec("hpp","Beban pokok jasa","Total beban pokok")}${row("Laba kotor",t.kotor,"sub")}${sec("beban","Beban operasional","Total beban operasional")}${row("Laba usaha",t.usaha,"sub")}${sec("lain_p","Pendapatan lain","Total pendapatan lain")}${sec("lain_b","Beban lain","Total beban lain")}${row("Laba sebelum pajak",t.sblm,"sub")}${sec("pajak","Pajak penghasilan","Total pajak")}${row("LABA BERSIH",t.laba,"tot")}</table></div><p class="hint">Margin bersih ${t.pendapatan?Math.round(t.laba/t.pendapatan*100)+"%":"–"} · basis akrual (pendapatan diakui saat invoice).</p></div>`}
@@ -968,6 +972,60 @@ function ekuitas(from,to,ptF){
   const T=f=>sumBy(rows,r=>r[f]);
   return {rows,aw:T("aw"),tambah:T("tambah"),kurang:T("kurang"),ak:T("ak"),laba:lP,selisih:Math.round(T("ak")-neraca(to,ptF).te)};
 }
+
+/* ---------- Laporan manajemen ---------- */
+function mgData(Y,ptF){
+  const P=ptF===undefined?PT:ptF,cur=TODAY.slice(0,7),end=asOf(),endPrev=(+Y-1)+end.slice(4);
+  const kasAt=t=>{const x=agg("",t,P);return Object.keys(x).filter(isKasAk).reduce((s,k)=>s+x[k].d-x[k].k,0)};
+  const months=Array.from({length:12},(_,i)=>{const ym=Y+"-"+pad(i+1);if(ym>cur)return {ym,future:1};const f=lr(ym+"-01",lastDay(ym),P).t;return {ym,pend:f.pendapatan+f.lain_p,beban:f.bebanAll+f.lain_b,laba:f.laba,kas:Math.round(kasAt(lastDay(ym)<TODAY?lastDay(ym):TODAY))}});
+  const f=lr(Y+"-01-01",end,P).t,f0=lr((+Y-1)+"-01-01",endPrev,P).t;
+  const byAk=(from,to,jenis)=>{const m=agg(from,to,P),o={};Object.keys(m).forEach(k=>{const a=AK[k];if(!a||!jenis.includes(a.jenis))return;const v=["pendapatan","lain_p"].includes(a.jenis)?m[k].k-m[k].d:m[k].d-m[k].k;if(Math.round(v))o[k]=v});return o};
+  const lay=byAk(Y+"-01-01",end,["pendapatan"]),lay0=byAk((+Y-1)+"-01-01",endPrev,["pendapatan"]),beb=byAk(Y+"-01-01",end,["hpp","beban","lain_b"]);
+  const kl={};DOCS.forEach(o=>{if(o.jenis==="jual"&&(!P||o.pt===P)&&o.tgl>=Y+"-01-01"&&o.tgl<=end){const s=sumBy(o.d.items,i=>i.harga);(kl[o.kontak]=kl[o.kontak]||{n:0,v:0}).v+=s;kl[o.kontak].n++}});
+  const umur={b:0,a:0,c:0,d:0,e:0},piu=DOCS.filter(o=>o.jenis==="jual"&&(!P||o.pt===P)&&sisaOf(o)>0.5);
+  piu.forEach(o=>{const s=sisaOf(o),late=o.jt?-daysTo(o.jt):0;umur[late<=0?"b":late<=30?"a":late<=60?"c":late<=90?"d":"e"]+=s});
+  const d90=addD(TODAY,-90),out=sumBy(LINES.filter(l=>isKasAk(l.akun)&&(!P||l.pt===P)&&l.tgl>d90&&l.tgl<=TODAY&&(DOCMAP[l.doc]||{}).jenis!=="pindah"),l=>l.k)/3;
+  const kas=Math.round(kasAt(TODAY));
+  return {Y,P,months,f,f0,lay,lay0,beb,kl,umur,piuT:sumBy(piu,o=>sisaOf(o)),kas,burn:out,runway:out>0?kas/out:null,end};
+}
+function mgChart(ms){
+  const L=ms.filter(m=>!m.future),W=960,H=240,pl=56,pb=24,pt=12,cw=(W-pl-8)/12,mx=Math.max(1,...L.map(m=>Math.max(m.pend,m.beban))),mn=Math.min(0,...L.map(m=>m.laba));
+  const y=v=>pt+(H-pt-pb)*(1-(v-mn)/(mx-mn)),ticks=(mn<0?[mn,0,mx]:[0,mx/2,mx]).filter((v,i,a)=>a.indexOf(v)===i);
+  let g=ticks.map(v=>`<line x1="${pl}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="10.5" fill="var(--ink-3)">${v?esc(rpS(v).replace("Rp ","")):"0"}</text>`).join("");
+  g+=`<line x1="${pl}" x2="${W-8}" y1="${y(0)}" y2="${y(0)}" stroke="var(--ink-3)"/>`;
+  ms.forEach((m,i)=>{const x=pl+i*cw;g+=`<text x="${x+cw/2}" y="${H-6}" text-anchor="middle" font-size="10.5" fill="var(--ink-3)">${BLN[i]}</text>`;if(m.future)return;
+    const bw=Math.min(16,cw/2-3);g+=`<rect x="${x+cw/2-bw-1}" y="${y(Math.max(0,m.pend))}" width="${bw}" height="${Math.max(0,y(0)-y(Math.max(0,m.pend)))}" rx="3" fill="var(--acc)"><title>${BLN_L[i]}: pendapatan ${rp(m.pend)}</title></rect><rect x="${x+cw/2+1}" y="${y(Math.max(0,m.beban))}" width="${bw}" height="${Math.max(0,y(0)-y(Math.max(0,m.beban)))}" rx="3" fill="var(--warn)" opacity=".85"><title>${BLN_L[i]}: beban ${rp(m.beban)}</title></rect>`});
+  const pts=L.map(m=>{const i=+m.ym.slice(5)-1;return [pl+i*cw+cw/2,y(m.laba),m]});
+  if(pts.length)g+=`<polyline points="${pts.map(p=>p[0]+","+p[1]).join(" ")}" fill="none" stroke="var(--ok)" stroke-width="2.5" stroke-linejoin="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--panel)" stroke="var(--ok)" stroke-width="2"><title>${fmtMasa(p[2].ym)}: laba ${rp(p[2].laba)}</title></circle>`).join("");
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:640px;height:auto;display:block" role="img" aria-label="Grafik pendapatan, beban, dan laba per bulan">${g}</svg></div><div class="mglg"><span><i style="background:var(--acc)"></i>Pendapatan</span><span><i style="background:var(--warn)"></i>Beban</span><span><i style="background:var(--ok);height:3px"></i>Laba bersih</span></div>`;
+}
+function mgHTML(){
+  const M=mgData(YR),f=M.f,f0=M.f0,pend=f.pendapatan+f.lain_p,pend0=f0.pendapatan+f0.lain_p,mg=pend?Math.round(f.laba/pend*100):0,lateT=M.umur.a+M.umur.c+M.umur.d+M.umur.e;
+  const per="1 Jan – "+fmtD(M.end).replace(/ \d{4}$/,"")+" "+YR;
+  let h=`<div class="kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px">
+    <div class="card"><small class="hint">Pendapatan ${per}</small><div style="font-size:22px;font-weight:750">${rpS(pend)}</div><small class="hint">${pend0?dlt(pend,pend0)+" vs periode sama "+(+YR-1):"belum ada data "+(+YR-1)}</small></div>
+    <div class="card"><small class="hint">Laba bersih</small><div style="font-size:22px;font-weight:750;color:var(--${f.laba<0?"bad":"ok"}-ink)">${rpS(f.laba)}</div><small class="hint">margin ${mg}%${f0.laba?" · "+dlt(f.laba,f0.laba):""}</small></div>
+    <div class="card"><small class="hint">Kas & bank hari ini</small><div style="font-size:22px;font-weight:750">${rpS(M.kas)}</div><small class="hint">${M.runway!=null?"cukup ± "+(M.runway>=24?"24+":Math.floor(M.runway))+" bulan biaya":"belum ada pengeluaran 90 hari terakhir"}</small></div>
+    <div class="card"><small class="hint">Piutang belum dibayar</small><div style="font-size:22px;font-weight:750">${rpS(M.piuT)}</div><small class="hint" style="${lateT?"color:var(--bad-ink)":""}">${lateT?rpS(lateT)+" lewat jatuh tempo":"tidak ada yang telat"}</small></div></div>`;
+  h+=`<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>Tren bulanan ${YR}</h3><small>${esc(PT||"Semua PT")}</small></div>${mgChart(M.months)}</div>`;
+  if(!PT&&pts().length>1){const rows=ptNames().map(n=>{const t=lr(YR+"-01-01",M.end,n).t,d=mgData(YR,n);return {n,p:t.pendapatan+t.lain_p,b:t.bebanAll+t.lain_b,l:t.laba,k:d.kas,pi:d.piuT}});
+    h+=`<div class="card" style="margin-bottom:12px"><div class="card-h"><h3>Per PT</h3><small>${per}</small></div><div class="tw" style="border:0"><table class="t"><thead><tr><th>PT</th><th class="r">Pendapatan</th><th class="r">Beban</th><th class="r">Laba</th><th class="r">Margin</th><th class="r">Kas</th><th class="r">Piutang</th></tr></thead><tbody>${rows.map(r=>`<tr class="click" data-pt="${esc(r.n)}"><td><b>${esc(r.n)}</b></td><td class="r">${fN(r.p)}</td><td class="r">${fN(r.b)}</td><td class="r${r.l<0?" neg":""}">${fA(r.l)}</td><td class="r">${r.p?Math.round(r.l/r.p*100)+"%":"–"}</td><td class="r">${fA(r.k)}</td><td class="r">${fA(r.pi)}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="r">${fN(sumBy(rows,r=>r.p))}</td><td class="r">${fN(sumBy(rows,r=>r.b))}</td><td class="r">${fA(sumBy(rows,r=>r.l))}</td><td class="r">${pend?mg+"%":"–"}</td><td class="r">${fA(sumBy(rows,r=>r.k))}</td><td class="r">${fA(sumBy(rows,r=>r.pi))}</td></tr></tbody></table></div></div>`}
+  const share=(o,o0,ttl,sub)=>{const L=Object.keys(o).map(k=>({k,v:o[k],v0:o0?o0[k]||0:null})).sort((a,b)=>b.v-a.v),T=sumBy(L,x=>x.v)||1;
+    return `<div class="card"><div class="card-h"><h3>${ttl}</h3><small>${sub}</small></div>${L.length?L.slice(0,8).map(x=>`<div class="mgbar click" data-bb="${x.k}"><div class="mgbl"><span>${esc(akNm(x.k))}</span><b>${rpS(x.v)}</b></div><div class="mgtr"><i style="width:${Math.max(2,x.v/T*100)}%"></i></div><small class="hint">${Math.round(x.v/T*100)}%${x.v0!=null?(x.v0?" · "+dlt(x.v,x.v0)+" vs "+(+YR-1):" · baru tahun ini"):""}</small></div>`).join(""):`<p class="hint">Belum ada data.</p>`}</div>`};
+  h+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:12px">${share(M.lay,M.lay0,"Pendapatan per layanan",per)}${share(M.beb,null,"Beban terbesar",per).replace(/<i style/g,'<i class="w" style')}</div>`;
+  const kl=Object.keys(M.kl).map(k=>({k,n:M.kl[k].n,v:M.kl[k].v})).sort((a,b)=>b.v-a.v).slice(0,10);
+  const U=M.umur,ut=U.b+U.a+U.c+U.d+U.e||1,ub=[["b","Belum jatuh tempo","ok"],["a","1–30 hari","warn"],["c","31–60 hari","warn"],["d","61–90 hari","bad"],["e","> 90 hari","bad"]];
+  h+=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:12px"><div class="card"><div class="card-h"><h3>10 klien terbesar</h3><small>nilai invoice sebelum pajak</small></div>${kl.length?`<div class="tw" style="border:0"><table class="t"><tbody>${kl.map((x,i)=>`<tr><td>${i+1}. ${esc(ktNm(x.k)||"(tanpa nama)")}<small>${x.n} invoice</small></td><td class="r">${fN(x.v)}</td></tr>`).join("")}</tbody></table></div>`:`<p class="hint">Belum ada invoice.</p>`}</div>
+    <div class="card"><div class="card-h"><h3>Umur piutang</h3><small>${rpS(M.piuT)}</small></div>${ub.map(([k,l,c])=>`<div class="mgbar"><div class="mgbl"><span>${l}</span><b>${rpS(U[k])}</b></div><div class="mgtr"><i style="width:${U[k]?Math.max(2,U[k]/ut*100):0}%;background:var(--${c})"></i></div></div>`).join("")}${M.piuT?`<p style="margin:8px 0 0"><a href="#" data-view="jual" class="hint">Lihat daftar piutang →</a></p>`:""}</div></div>`;
+  h+=`<div class="card"><div class="card-h"><h3>Rincian per bulan ${YR}</h3></div><div class="tw" style="border:0"><table class="t"><thead><tr><th>Bulan</th><th class="r">Pendapatan</th><th class="r">Beban</th><th class="r">Laba bersih</th><th class="r">Margin</th><th class="r">Kas akhir</th></tr></thead><tbody>${M.months.filter(m=>!m.future).map(m=>`<tr><td>${BLN_L[+m.ym.slice(5)-1]}</td><td class="r">${fN(m.pend)}</td><td class="r">${fN(m.beban)}</td><td class="r${m.laba<0?" neg":""}">${fA(m.laba)}</td><td class="r">${m.pend?Math.round(m.laba/m.pend*100)+"%":"–"}</td><td class="r">${fA(m.kas)}</td></tr>`).join("")}</tbody></table></div><p class="hint">Laporan manajemen tidak ikut filter bulan; selalu dari Januari s.d. hari ini di tahun buku yang dipilih. Ikut di Download Excel (sheet Manajemen).</p></div>`;
+  return h;
+}
+function mgSheet(){const M=mgData(YR),A2=[["Laporan Manajemen "+(PT||"Semua PT")+" "+YR],[],["Bulan","Pendapatan","Beban","Laba bersih","Kas akhir"]];
+  M.months.filter(m=>!m.future).forEach(m=>A2.push([fmtMasa(m.ym),Math.round(m.pend),Math.round(m.beban),Math.round(m.laba),m.kas]));
+  A2.push([],["Pendapatan per layanan","Nilai"]);Object.keys(M.lay).sort((a,b)=>M.lay[b]-M.lay[a]).forEach(k=>A2.push([akNm(k),Math.round(M.lay[k])]));
+  A2.push([],["Klien","Nilai invoice","Jumlah invoice"]);Object.keys(M.kl).sort((a,b)=>M.kl[b].v-M.kl[a].v).slice(0,20).forEach(k=>A2.push([ktNm(k),Math.round(M.kl[k].v),M.kl[k].n]));
+  A2.push([],["Umur piutang","Nilai"],["Belum jatuh tempo",Math.round(M.umur.b)],["1-30 hari",Math.round(M.umur.a)],["31-60 hari",Math.round(M.umur.c)],["61-90 hari",Math.round(M.umur.d)],["> 90 hari",Math.round(M.umur.e)]);
+  return A2}
 
 /* ---------- form transaksi + jurnal otomatis ---------- */
 let ED=null;
@@ -1865,6 +1923,7 @@ async function xlsx(){
   sec("pendapatan","Pendapatan usaha","Total pendapatan");sec("hpp","Beban pokok jasa","Total beban pokok");LR.push(["Laba kotor",Math.round(t.kotor)]);sec("beban","Beban operasional","Total beban operasional");LR.push(["Laba usaha",Math.round(t.usaha)]);
   sec("lain_p","Pendapatan lain","Total pendapatan lain");sec("lain_b","Beban lain","Total beban lain");LR.push(["Laba sebelum pajak",Math.round(t.sblm)]);sec("pajak","Pajak penghasilan","Total pajak");LR.push(["LABA BERSIH",Math.round(t.laba)]);
   add("Laba Rugi",LR,[48,18]);
+  add("Manajemen",mgSheet(),[30,16,16,16,16]);
   const n=neraca(to),NR=[["Laporan Posisi Keuangan (Neraca)"],[(PT||"Semua PT")+" · per "+to],[],["ASET"]];
   n.rows.aset.forEach(x=>NR.push(["   "+x.a.kode+" "+x.a.nama,Math.round(x.v)]));NR.push(["Total aset",Math.round(n.ta)],[],["KEWAJIBAN"]);
   n.rows.kewajiban.forEach(x=>NR.push(["   "+x.a.kode+" "+x.a.nama,Math.round(x.v)]));NR.push(["Total kewajiban",Math.round(n.tk)],["EKUITAS"]);

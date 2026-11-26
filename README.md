@@ -3,7 +3,7 @@
 Aplikasi pembukuan (PWA) untuk Vorent, Izinin, dan Echoffice: double-entry, per PT, mulai dari tanggal pendirian.
 Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-prospek), tapi **data keuangan tidak diambil dari Prospek**. Semua diinput oleh tim finance.
 
-## Fitur (Fondasi + Tahap 2–6)
+## Fitur (Fondasi + Tahap 2–7)
 - **Data Induk**: profil PT & pajak (PKP sejak, jenis pajak, kode invoice), kebijakan akuntansi, Daftar Akun (COA standar perusahaan jasa),
   pelanggan, vendor & agen, karyawan & sales, jasa/paket, rekening bank & kas.
 - **Transaksi dengan jurnal otomatis**: penjualan (invoice, PPN, PPh 23 dipotong klien, DP), terima pembayaran, pembelian/beban (PPN masukan, potong PPh),
@@ -24,6 +24,8 @@ Login memakai akun aplikasi [Prospek](https://github.com/my-razara/dashboard-pro
 
 - **Tutup tahun & laporan tahunan** — menu Tutup Buku → tab Tutup tahun: checklist akhir tahun, perhitungan PPh Badan (tarif umum + fasilitas Pasal 31E atau PP 55 0,5%, koreksi fiskal, kredit PPh 23/25, PPh 29) dengan tombol jurnal otomatis, CALK yang bisa diedit, dan laporan tahunan siap cetak/PDF (neraca & laba rugi komparatif, perubahan ekuitas, arus kas, CALK bernomor).
 - Sheet **Catatan** menyimpan checklist tutup buku, CALK, dan perhitungan PPh Badan per PT (dibuat otomatis).
+
+- **Laporan manajemen** — menu Laporan → Manajemen (tab pertama): ringkasan untuk owner (pendapatan vs tahun lalu, laba & margin, kas & perkiraan cukup berapa bulan, piutang telat), grafik tren bulanan, perbandingan per PT, pendapatan per layanan, beban terbesar, 10 klien terbesar, umur piutang, rincian per bulan. Ikut di Download Excel (sheet Manajemen).
 
 Tahap berikutnya: Arus Kas, Perubahan Ekuitas, CALK, laporan manajemen & tahunan.
 
