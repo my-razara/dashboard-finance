@@ -901,7 +901,7 @@ function rProyek(){
 let lapTab="lr",bbAkun="";
 function rLap(){
   const p=per(),to=asOf();
-  let h=tabs(lapTab,[["lr","Laba Rugi"],["nrc","Neraca"],["ns","Neraca Saldo"],["bb","Buku Besar"]],"lt");
+  let h=tabs(lapTab,[["lr","Laba Rugi"],["nrc","Neraca"],["ak","Arus Kas"],["ek","Perubahan Ekuitas"],["ns","Neraca Saldo"],["bb","Buku Besar"]],"lt");
   const head=(t,s)=>`<div class="lap-h"><b>${esc(t)}</b><small>${esc(PT?(ptOf(PT).legal||PT):"Semua PT (gabungan)")} · ${esc(s)}</small></div>`;
   const row=(lbl,v,cls)=>`<tr class="${cls||""}"><td class="${cls?"":"ind"}">${lbl}</td><td class="r${v<0?" neg":""}">${fA(v)}</td></tr>`;
   if(lapTab==="lr"){const f=lr(p.from,p.to),g=f.g,t=f.t;
@@ -910,6 +910,21 @@ function rLap(){
   else if(lapTab==="nrc"){const n=neraca(to),grp=list=>{const by={};list.forEach(x=>{(by[x.a.grup||"Lainnya"]=by[x.a.grup||"Lainnya"]||[]).push(x)});return Object.keys(by).map(gname=>`<tr class="g"><td colspan="2">${esc(gname)}</td></tr>`+by[gname].map(x=>`<tr class="click" data-bb="${x.a.kode}"><td class="ind">${esc(x.a.kode+" "+x.a.nama)}</td><td class="r">${fA(x.v)}</td></tr>`).join("")).join("")};
     h+=`<div class="card">${head("Laporan Posisi Keuangan (Neraca)","per "+fmtD(to))}<div class="tw" style="border:0"><table class="t"><tr class="tot"><td>ASET</td><td></td></tr>${grp(n.rows.aset)}${row("Total aset",n.ta,"tot")}<tr><td colspan="2" style="border:0;height:12px"></td></tr><tr class="tot"><td>KEWAJIBAN</td><td></td></tr>${grp(n.rows.kewajiban)}${row("Total kewajiban",n.tk,"sub")}<tr class="tot"><td>EKUITAS</td><td></td></tr>${grp(n.rows.ekuitas)}${row("Laba ditahan (tahun-tahun sebelumnya)",n.ditahan)}${row("Laba tahun berjalan",n.berjalan)}${row("Total ekuitas",n.te,"sub")}${row("Total kewajiban + ekuitas",n.tk+n.te,"tot")}</table></div>
       <p style="margin:10px 4px 0">${n.selisih?`<span class="balok bad">Tidak seimbang: selisih ${fN(n.selisih)}</span>`:`<span class="balok ok">✓ Seimbang: aset = kewajiban + ekuitas</span>`}</p></div>`}
+  else if(lapTab==="ak"){const k=arusKas(p.from,to);
+    const it=x=>`<tr class="click" data-bb="${x.k}"><td class="ind">${esc(x.l)}</td><td class="r${x.v<0?" neg":""}">${fA(x.v)}</td></tr>`;
+    h+=`<div class="card">${head("Laporan Arus Kas",fmtD(p.from)+" – "+fmtD(to))}<div class="tw" style="border:0"><table class="t">
+      <tr class="g"><td colspan="2">Arus kas dari aktivitas operasi</td></tr>${row("Laba bersih",k.laba)}${k.g.dep.map(it).join("")}${k.g.op.map(it).join("")}${row("Kas bersih dari aktivitas operasi",k.op,"sub")}
+      <tr class="g"><td colspan="2">Arus kas dari aktivitas investasi</td></tr>${k.g.inv.length?k.g.inv.map(it).join(""):`<tr><td class="ind hint">–</td><td></td></tr>`}${row("Kas bersih dari aktivitas investasi",k.inv,"sub")}
+      <tr class="g"><td colspan="2">Arus kas dari aktivitas pendanaan</td></tr>${k.g.fin.length?k.g.fin.map(it).join(""):`<tr><td class="ind hint">–</td><td></td></tr>`}${row("Kas bersih dari aktivitas pendanaan",k.fin,"sub")}
+      ${row("Kenaikan (penurunan) kas",k.net,"tot")}${row("Saldo kas & bank awal periode",k.awal)}${row("Saldo kas & bank akhir periode",k.awal+k.net,"tot")}</table></div>
+      <p style="margin:10px 4px 0">${k.selisih?`<span class="balok bad">Tidak cocok dengan saldo bank: selisih ${fN(k.selisih)}</span>`:`<span class="balok ok">✓ Cocok dengan saldo kas & bank (${fA(k.akhir)})</span>`}</p>
+      <p class="hint">Metode tidak langsung: dimulai dari laba bersih, lalu disesuaikan dengan pos yang bukan kas (penyusutan) dan perubahan piutang, utang, pajak, uang muka. Angka minus = kas keluar.</p></div>`}
+  else if(lapTab==="ek"){const e=ekuitas(p.from,to);
+    h+=`<div class="card">${head("Laporan Perubahan Ekuitas",fmtD(p.from)+" – "+fmtD(to))}<div class="tw" style="border:0"><table class="t"><thead><tr><th>Ekuitas</th><th class="r">Saldo awal</th><th class="r">Penambahan</th><th class="r">Pengurangan</th><th class="r">Saldo akhir</th></tr></thead><tbody>
+      ${e.rows.map(r=>`<tr${r.kode?` class="click" data-bb="${r.kode}"`:""}><td>${esc((r.kode?r.kode+" ":"")+r.nama)}${r.laba?`<small>${e.laba<0?"Rugi":"Laba"} periode ini ${fA(e.laba)}</small>`:""}</td><td class="r">${fA(r.aw)}</td><td class="r">${r.tambah?fN(r.tambah):"–"}</td><td class="r">${r.kurang?"("+fN(r.kurang)+")":"–"}</td><td class="r"><b>${fA(r.ak)}</b></td></tr>`).join("")}
+      <tr class="tot"><td>Total ekuitas</td><td class="r">${fA(e.aw)}</td><td class="r">${e.tambah?fN(e.tambah):"–"}</td><td class="r">${e.kurang?"("+fN(e.kurang)+")":"–"}</td><td class="r">${fA(e.ak)}</td></tr></tbody></table></div>
+      <p style="margin:10px 4px 0">${e.selisih?`<span class="balok bad">Tidak sama dengan neraca: selisih ${fN(e.selisih)}</span>`:`<span class="balok ok">✓ Sama dengan total ekuitas di neraca</span>`}</p>
+      <p class="hint">Penambahan: setoran modal & laba. Pengurangan: prive / dividen & rugi. Akun "Ekuitas Saldo Awal (sementara)" sebaiknya dipindah ke Modal Disetor / Laba Ditahan lewat jurnal umum setelah saldo awal lengkap.</p></div>`}
   else if(lapTab==="ns"){const y=to.slice(0,4),m=agg("",to),mL=agg(y+"-01-01",to);let td=0,tk=0;
     const rows=D.akun.slice().sort((a,b)=>a.kode.localeCompare(b.kode)).map(a=>{const x=isLR(a)?mL[a.kode]:m[a.kode];if(!x)return "";const v=x.d-x.k;if(!Math.round(v))return "";const dd=v>0?v:0,kk=v<0?-v:0;td+=dd;tk+=kk;return `<tr class="click" data-bb="${a.kode}"><td class="c">${esc(a.kode)}</td><td>${esc(a.nama)}</td><td class="r">${dd?fN(dd):""}</td><td class="r">${kk?fN(kk):""}</td></tr>`}).join("");
     const ld=lr("",(+y-1)+"-12-31").t.laba;if(Math.round(ld)){if(ld>0)tk+=ld;else td+=-ld}
@@ -918,8 +933,38 @@ function rLap(){
     const op=LINES.filter(l=>l.akun===bbAkun&&(!PT||l.pt===PT)&&l.tgl<p.from&&(!lrA||l.tgl>=y+"-01-01")).reduce((s,l)=>s+l.d-l.k,0);
     const L=LINES.filter(l=>l.akun===bbAkun&&(!PT||l.pt===PT)&&l.tgl>=p.from&&l.tgl<=p.to).sort((x,z)=>x.tgl.localeCompare(z.tgl));const sg=a.normal==="K"?-1:1;let run=op;
     h+=`<div class="bar"><select data-bba style="max-width:420px" aria-label="Akun">${akOpts(null,bbAkun)}</select></div><div class="card">${head("Buku Besar: "+(a.kode||"")+" "+(a.nama||""),perLbl())}<div class="tw" style="border:0"><table class="t"><thead><tr><th>Tanggal</th><th>Keterangan</th><th class="r">Debit</th><th class="r">Kredit</th><th class="r">Saldo</th></tr></thead><tbody><tr class="g"><td></td><td>Saldo awal</td><td></td><td></td><td class="r">${fA(op*sg)}</td></tr>${L.map(l=>{run+=l.d-l.k;const o=DOCMAP[l.doc]||{};return `<tr class="click" data-doc="${o.id}"><td class="c">${fmtDs(l.tgl)}</td><td>${esc(l.ket||o.ket||DOKN[o.jenis])}<small>${esc([DOKN[o.jenis],o.no,ktNm(l.kontak||o.kontak),PT?"":o.pt].filter(Boolean).join(" · "))}</small></td><td class="r">${l.d?fN(l.d):""}</td><td class="r">${l.k?fN(l.k):""}</td><td class="r">${fA(run*sg)}</td></tr>`}).join("")}<tr class="tot"><td></td><td>Saldo akhir</td><td class="r">${fN(sumBy(L,l=>l.d))}</td><td class="r">${fN(sumBy(L,l=>l.k))}</td><td class="r">${fA(run*sg)}</td></tr></tbody></table></div></div>`}
-  h+=`<p class="hint" style="margin:10px 4px">Arus Kas, Perubahan Ekuitas, dan CALK menyusul di tahap berikutnya. Semua laporan bisa diunduh lewat <a href="#" data-act="xlsx">Download Excel</a>.</p>`;
+  h+=`<p class="hint" style="margin:10px 4px">CALK menyusul di tahap berikutnya. Semua laporan bisa diunduh lewat <a href="#" data-act="xlsx">Download Excel</a>.</p>`;
   $("#v-lap").innerHTML=h;
+}
+
+/* ---------- Arus Kas (metode tidak langsung) & Perubahan Ekuitas ---------- */
+const isKasAk=k=>D.rek.some(r=>r.akun===k)||/^(Kas|Bank)$/i.test((AK[k]||{}).grup||"");
+const akKelas=a=>{if(!a)return "op";const k=a.kode;
+  if(a.jenis==="aset"&&(a.grup==="Aset Tetap"||/^1-2/.test(k)))return (a.normal==="K"||/^1-29/.test(k))?"dep":"inv";
+  if(a.jenis==="kewajiban"&&(/jangka panjang/i.test(a.grup||"")||/^2-2/.test(k)))return "fin";
+  if(a.jenis==="ekuitas")return "fin";return "op"};
+function arusKas(from,to,ptF){
+  const m=agg(from,to,ptF),laba=lr(from,to,ptF).t.laba,g={op:[],dep:[],inv:[],fin:[]};
+  Object.keys(m).forEach(k=>{if(isKasAk(k))return;const a=AK[k];if(a&&isLR(a))return;const v=Math.round(-(m[k].d-m[k].k));if(!v)return;
+    const c=akKelas(a),nm=a?a.nama:"Akun "+k;let l=nm;
+    if(c==="op")l=(a&&a.jenis==="aset"?(v<0?"Kenaikan ":"Penurunan "):(v>0?"Kenaikan ":"Penurunan "))+nm;
+    if(c==="dep")l="Penyusutan aset tetap (bukan kas)";
+    if(c==="inv")l=(v<0?"Pembelian ":"Penjualan / pelepasan ")+nm;
+    if(c==="fin")l=k==="3-3001"?(v<0?"Pembagian dividen / prive":"Pengembalian prive"):(v>0?"Penerimaan ":"Pembayaran / pengembalian ")+nm;
+    g[c].push({k,l,v})});
+  const cash=t=>{const x=agg("",t,ptF);return Object.keys(x).filter(isKasAk).reduce((s,k)=>s+x[k].d-x[k].k,0)};
+  Object.keys(g).forEach(c=>g[c].sort((a,b)=>a.k.localeCompare(b.k)));
+  const op=laba+sumBy(g.dep,x=>x.v)+sumBy(g.op,x=>x.v),inv=sumBy(g.inv,x=>x.v),fin=sumBy(g.fin,x=>x.v),awal=Math.round(cash(addD(from,-1))),akhir=Math.round(cash(to));
+  return {g,laba,op,inv,fin,net:op+inv+fin,awal,akhir,selisih:Math.round(awal+op+inv+fin-akhir)};
+}
+function ekuitas(from,to,ptF){
+  const pre=addD(from,-1),a0=agg("",pre,ptF),a1=agg("",to,ptF),rows=[];
+  D.akun.filter(a=>a.jenis==="ekuitas").sort((x,y)=>x.kode.localeCompare(y.kode)).forEach(a=>{const b=x=>x[a.kode]?Math.round(x[a.kode].k-x[a.kode].d):0,aw=b(a0),ak=b(a1);if(!aw&&!ak&&!LINES.some(l=>l.akun===a.kode&&(!ptF||l.pt===ptF)&&l.tgl>=from&&l.tgl<=to))return;
+    const mv=agg(from,to,ptF)[a.kode]||{d:0,k:0};rows.push({kode:a.kode,nama:a.nama,aw,tambah:Math.round(mv.k),kurang:Math.round(mv.d),ak})});
+  const lAw=Math.round(lr("",pre,ptF).t.laba),lP=Math.round(lr(from,to,ptF).t.laba);
+  rows.push({kode:"",nama:"Akumulasi laba rugi (laba ditahan)",aw:lAw,tambah:lP>0?lP:0,kurang:lP<0?-lP:0,ak:lAw+lP,laba:1});
+  const T=f=>sumBy(rows,r=>r[f]);
+  return {rows,aw:T("aw"),tambah:T("tambah"),kurang:T("kurang"),ak:T("ak"),laba:lP,selisih:Math.round(T("ak")-neraca(to,ptF).te)};
 }
 
 /* ---------- form transaksi + jurnal otomatis ---------- */
@@ -1626,6 +1671,13 @@ async function xlsx(){
   n.rows.kewajiban.forEach(x=>NR.push(["   "+x.a.kode+" "+x.a.nama,Math.round(x.v)]));NR.push(["Total kewajiban",Math.round(n.tk)],["EKUITAS"]);
   n.rows.ekuitas.forEach(x=>NR.push(["   "+x.a.kode+" "+x.a.nama,Math.round(x.v)]));NR.push(["   Laba ditahan (tahun sebelumnya)",Math.round(n.ditahan)],["   Laba tahun berjalan",Math.round(n.berjalan)],["Total ekuitas",Math.round(n.te)],["Total kewajiban + ekuitas",Math.round(n.tk+n.te)]);
   add("Neraca",NR,[48,18]);
+  {const k=arusKas(p.from,to),AKS=[["Laporan Arus Kas (metode tidak langsung)"],[(PT||"Semua PT")+" · "+p.from+" s.d. "+to],[],["Arus kas dari aktivitas operasi"],["   Laba bersih",Math.round(k.laba)]];
+    k.g.dep.concat(k.g.op).forEach(x=>AKS.push(["   "+x.l,x.v]));AKS.push(["Kas bersih dari aktivitas operasi",Math.round(k.op)],[],["Arus kas dari aktivitas investasi"]);
+    k.g.inv.forEach(x=>AKS.push(["   "+x.l,x.v]));AKS.push(["Kas bersih dari aktivitas investasi",Math.round(k.inv)],[],["Arus kas dari aktivitas pendanaan"]);
+    k.g.fin.forEach(x=>AKS.push(["   "+x.l,x.v]));AKS.push(["Kas bersih dari aktivitas pendanaan",Math.round(k.fin)],[],["Kenaikan (penurunan) kas",Math.round(k.net)],["Saldo kas & bank awal",k.awal],["Saldo kas & bank akhir",k.awal+Math.round(k.net)]);
+    add("Arus Kas",AKS,[52,18]);
+    const e=ekuitas(p.from,to),EK=[["Laporan Perubahan Ekuitas"],[(PT||"Semua PT")+" · "+p.from+" s.d. "+to],[],["Ekuitas","Saldo awal","Penambahan","Pengurangan","Saldo akhir"]];
+    e.rows.forEach(r=>EK.push([(r.kode?r.kode+" ":"")+r.nama,r.aw,r.tambah,r.kurang,r.ak]));EK.push(["Total ekuitas",e.aw,e.tambah,e.kurang,e.ak]);add("Perubahan Ekuitas",EK,[44,16,16,16,16])}
   const y=to.slice(0,4),m=agg("",to),mL=agg(y+"-01-01",to),NS=[["Kode","Akun","Debit","Kredit"]];
   D.akun.slice().sort((a,b)=>a.kode.localeCompare(b.kode)).forEach(a=>{const x=isLR(a)?mL[a.kode]:m[a.kode];if(!x)return;const v=Math.round(x.d-x.k);if(v)NS.push([a.kode,a.nama,v>0?v:"",v<0?-v:""])});
   const ld=Math.round(lr("",(+y-1)+"-12-31").t.laba);if(ld)NS.push(["","Laba ditahan tahun sebelumnya",ld<0?-ld:"",ld>0?ld:""]);add("Neraca Saldo",NS,[10,40,16,16]);
